@@ -15,7 +15,7 @@
 		trustedTypes.createPolicy('default', { createHTML: (s) => s, createScript: (s) => s, createScriptURL: (s) => s });
 	}
 
-	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS' };
+	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', TAGS: 'DECLUTTER_HIDE_TAGS' };
 	const INIT_KEY = 'DECLUTTER_INITIALIZED';
 	if (!localStorage.getItem(INIT_KEY)) {
 		Object.values(KEYS).forEach((k) => localStorage.setItem(k, 'true'));
@@ -37,13 +37,17 @@
 .DECLUTTER-TOGGLE-ALL:hover { background: var(--yt-spec-10-percent-layer); }
 .DECLUTTER-HIDE-LOGO ytd-topbar-logo-renderer { display: none !important; }
 .DECLUTTER-HIDE-CREATE button[aria-label="Create"] { display: none !important; }
-.DECLUTTER-HIDE-NOTIFICATIONS ytd-notification-topbar-button-renderer { display: none !important; }`;
+.DECLUTTER-HIDE-NOTIFICATIONS ytd-notification-topbar-button-renderer { display: none !important; }
+.DECLUTTER-HIDE-MICROPHONE #voice-search-button { display: none !important; }
+.DECLUTTER-HIDE-TAGS ytd-feed-filter-chip-bar-renderer { display: none !important; }`;
 	document.head.appendChild(style);
 
 	const applySettings = () => {
 		document.body.classList.toggle('DECLUTTER-HIDE-LOGO', get(KEYS.LOGO));
 		document.body.classList.toggle('DECLUTTER-HIDE-CREATE', get(KEYS.CREATE));
 		document.body.classList.toggle('DECLUTTER-HIDE-NOTIFICATIONS', get(KEYS.NOTIFICATIONS));
+		document.body.classList.toggle('DECLUTTER-HIDE-MICROPHONE', get(KEYS.MICROPHONE));
+		document.body.classList.toggle('DECLUTTER-HIDE-TAGS', get(KEYS.TAGS));
 	};
 	applySettings();
 
@@ -59,6 +63,8 @@
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcLogo"${get(KEYS.LOGO) ? ' checked' : ''}>Hide Logo</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcCreate"${get(KEYS.CREATE) ? ' checked' : ''}>Hide +Create button</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcNotifications"${get(KEYS.NOTIFICATIONS) ? ' checked' : ''}>Hide Notifications button</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcMicrophone"${get(KEYS.MICROPHONE) ? ' checked' : ''}>Hide Microphone</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcTags"${get(KEYS.TAGS) ? ' checked' : ''}>Hide Tags</label>
 </div>`;
 
 		const menu = wrap.querySelector('.DECLUTTER-MENU');
@@ -72,6 +78,8 @@
 		wrap.querySelector('#dcLogo').onchange = (e) => { set(KEYS.LOGO, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcCreate').onchange = (e) => { set(KEYS.CREATE, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcNotifications').onchange = (e) => { set(KEYS.NOTIFICATIONS, e.target.checked); applySettings(); };
+		wrap.querySelector('#dcMicrophone').onchange = (e) => { set(KEYS.MICROPHONE, e.target.checked); applySettings(); };
+		wrap.querySelector('#dcTags').onchange = (e) => { set(KEYS.TAGS, e.target.checked); applySettings(); };
 		document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) menu.classList.remove('open'); });
 
 		target.parentNode.insertBefore(wrap, target);
