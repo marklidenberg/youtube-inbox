@@ -52,6 +52,21 @@
 .YT-HRV-RATED-HIDDEN { display: none !important; }
 .YT-HRV-RATED-DIMMED { opacity: 0.3; }
 
+.YT-HRV-LOADING {
+	position: relative;
+}
+
+.YT-HRV-LOADING::before {
+	content: '⌛';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	font-size: 48px;
+	z-index: 100;
+	pointer-events: none;
+}
+
 .YT-HRV-BUTTONS {
 	background: transparent;
 	border: 1px solid var(--ytd-searchbox-legacy-border-color);
@@ -159,7 +174,7 @@
 	};
 
 	// Batch check videos for rating status
-	const checkVideosRatingBatch = async (videoIds) => {
+	const checkVideosRatingBatch = async (videoIds, onVideoChecked) => {
 		const results = {};
 		const uncachedIds = [];
 
@@ -168,6 +183,7 @@
 			const cached = getCachedRating(videoId);
 			if (cached) {
 				results[videoId] = cached;
+				onVideoChecked(videoId, cached);
 			} else {
 				uncachedIds.push(videoId);
 			}
@@ -191,6 +207,8 @@
 				results[videoId] = rating;
 				// Cache only rated videos (not unrated ones)
 				setCachedRating(videoId, rating);
+				// Apply state immediately
+				onVideoChecked(videoId, rating);
 			}));
 
 			if (i + BATCH_SIZE < uncachedIds.length) {
@@ -287,7 +305,7 @@
 		const state = getState();
 
 		// Remove all state classes first
-		element.classList.remove('YT-HRV-RATED-HIDDEN', 'YT-HRV-RATED-DIMMED');
+		element.classList.remove('YT-HRV-RATED-HIDDEN', 'YT-HRV-RATED-DIMMED', 'YT-HRV-LOADING');
 
 		if (!rating) return;
 
@@ -308,19 +326,25 @@
 
 		const videoIds = videos.map(v => v.videoId);
 
-		// Mark as processed
-		videos.forEach(({ element }) => {
-			element.classList.add('YT-HRV-PROCESSED');
+		// Build a map from videoId to element for quick lookup
+		const videoIdToElement = new Map();
+		videos.forEach(({ element, videoId }) => {
+			videoIdToElement.set(videoId, element);
 		});
 
-		// Check rating status
-		const ratingStatus = await checkVideosRatingBatch(videoIds);
+		// Mark as processed and show loading indicator
+		videos.forEach(({ element }) => {
+			element.classList.add('YT-HRV-PROCESSED');
+			element.classList.add('YT-HRV-LOADING');
+		});
 
-		// Apply results
-		videos.forEach(({ element, videoId }) => {
-			const rating = ratingStatus[videoId] || false;
-			ratingStatusMap.set(element, rating);
-			applyState(element, rating);
+		// Check rating status with callback to apply state immediately
+		await checkVideosRatingBatch(videoIds, (videoId, rating) => {
+			const element = videoIdToElement.get(videoId);
+			if (element) {
+				ratingStatusMap.set(element, rating);
+				applyState(element, rating);
+			}
 		});
 	};
 
