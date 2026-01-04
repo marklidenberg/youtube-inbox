@@ -23,4 +23,4 @@ After:
 
 Options:
 
-![Declutter options](docs/declutter-options.png)
+<img src="docs/declutter-options.png" width="33%">
