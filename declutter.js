@@ -43,7 +43,11 @@
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer #sections > ytd-guide-section-renderer:has(h3:not([hidden])) { display: none !important; }
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer #sections > ytd-guide-collapsible-entry-renderer { display: none !important; }
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer #footer { display: none !important; }
-.DECLUTTER-HIDE-SIDEBAR ytd-mini-guide-renderer { display: none !important; }`;
+.DECLUTTER-HIDE-SIDEBAR ytd-mini-guide-renderer { display: none !important; }
+.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Settings"]) { display: none !important; }
+.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Report history"]) { display: none !important; }
+.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Help"]) { display: none !important; }
+.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Send feedback"]) { display: none !important; }`;
 	document.head.appendChild(style);
 
 	const applySettings = () => {
