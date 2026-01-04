@@ -188,6 +188,8 @@ ytd-masthead #center {
 	position: absolute !important;
 	left: 50% !important;
 	transform: translateX(-50%) !important;
+	width: 40% !important;
+	min-width: 480px !important;
 	max-width: 732px !important;
 }
 ytd-masthead #container.ytd-masthead {
