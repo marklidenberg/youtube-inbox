@@ -1,349 +1,205 @@
 // ==UserScript==
 // @name         YouTube - Pixelate + Grayscale thumbnails (Videos + Shorts)
 // @namespace    local
-// @version      2.0
+// @version      1.3
 // @description  Makes YouTube video + Shorts thumbnails grayscale and very pixelated (handles dynamic loading)
-// @match        http://*.youtube.com/*
-// @match        http://youtube.com/*
-// @match        https://*.youtube.com/*
-// @match        https://youtube.com/*
-// @noframes
+// @match        https://www.youtube.com/*
+// @match        https://m.youtube.com/*
+// @run-at       document-start
+// @grant        none
 // ==/UserScript==
 
-((_undefined) => {
-	// ---- TWEAK THESE ----
-	const PIXEL_SCALE = 0.15;      // smaller = chunkier pixels (try 0.04 .. 0.10)
-	const JPEG_QUALITY = 0.25;     // lower = more artifacts (0.15 .. 0.40)
-	const ONLY_YTIMG = false;      // only pixelate i.ytimg.com thumbs (safer)
-	// ---------------------
+(() => {
+  'use strict';
 
-	// Needed to bypass YouTube's Trusted Types restrictions
-	if (
-		typeof trustedTypes !== 'undefined' &&
-		trustedTypes.defaultPolicy === null
-	) {
-		const s = (s) => s;
-		trustedTypes.createPolicy('default', {
-			createHTML: s,
-			createScript: s,
-			createScriptURL: s,
-		});
-	}
+  // ---- TWEAK THESE ----
+  const PIXEL_SCALE = 0.15;      // smaller = chunkier pixels (try 0.04 .. 0.10)
+  const JPEG_QUALITY = 0.25;     // lower = more artifacts (0.15 .. 0.40)
+  const ONLY_YTIMG = false;       // only pixelate i.ytimg.com thumbs (safer)
+  // ---------------------
 
-	// Storage keys
-	const PIXELATE_STATE_KEY = 'YT_PIXELATE_STATE';
-	const GRAYSCALE_STATE_KEY = 'YT_GRAYSCALE_STATE';
+  const THUMB_IMG_SELECTOR = [
+    // Shorts (view-model DOM like you pasted)
+    'a[href^="/shorts/"] img',
+    'a.reel-item-endpoint img',
+    'ytm-shorts-lockup-view-model-v2 img',
+    'ytm-shorts-lockup-view-model img',
+    'yt-thumbnail-view-model img',
+    '.ytThumbnailViewModelImage img',
 
-	// Get state from localStorage
-	const getPixelateState = () => localStorage.getItem(PIXELATE_STATE_KEY) || 'pixelated';
-	const getGrayscaleState = () => localStorage.getItem(GRAYSCALE_STATE_KEY) || 'colored';
+    // Classic thumbnails
+    'ytd-thumbnail img',
+    'a#thumbnail img',
 
-	const addStyle = (aCss) => {
-		const head = document.getElementsByTagName('head')[0];
-		if (head) {
-			const style = document.createElement('style');
-			style.setAttribute('type', 'text/css');
-			style.textContent = aCss;
-			head.appendChild(style);
-			return style;
-		}
-		return null;
-	};
+    // Channel banners and avatars
+    'yt-image-banner-view-model img',
+    '.yt-spec-avatar-shape img',
 
-	addStyle(`
-.YT-PIXELATE-BUTTONS {
-	background: transparent;
-	border: 1px solid var(--ytd-searchbox-legacy-border-color);
-	border-radius: 40px;
-	display: flex;
-	gap: 5px;
-	margin: 0 20px;
-}
+    // Common YouTube image classes (your snippet uses ytCoreImageHost)
+    'img.ytCoreImageHost',
+    'img[class*="ytCoreImage"]',
 
-.YT-PIXELATE-BUTTON {
-	align-items: center;
-	background: transparent;
-	border: 0;
-	border-radius: 40px;
-	color: var(--yt-spec-icon-inactive);
-	cursor: pointer;
-	display: flex;
-	height: 40px;
-	justify-content: center;
-	outline: 0;
-	width: 40px;
-}
+    // Fallback (most thumbnails)
+    'img[src*="i.ytimg.com/vi/"]',
+  ].join(', ');
 
-.YT-PIXELATE-BUTTON:focus,
-.YT-PIXELATE-BUTTON:hover {
-	background: var(--yt-spec-badge-chip-background);
-}
+  // Grayscale via CSS (cheap + immediate)
+  const STYLE = `
+    ${THUMB_IMG_SELECTOR} {
+      filter: grayscale(100%) !important;
+    }
+  `;
 
-.YT-PIXELATE-BUTTON-ACTIVE {
-	color: var(--yt-spec-icon-active-other);
-}
+  function injectStyle(cssText) {
+    if (document.getElementById('yt-pixel-gray-style')) return;
+    const style = document.createElement('style');
+    style.id = 'yt-pixel-gray-style';
+    style.textContent = cssText;
+    (document.head || document.documentElement).appendChild(style);
+  }
 
-.YT-PIXELATE-BUTTON-DISABLED {
-	color: var(--yt-spec-icon-disabled);
-}
+  function getBestSrc(img) {
+    return img.currentSrc || img.src || '';
+  }
 
-.YT-GRAYSCALE-ON {
-	filter: grayscale(100%) !important;
-}
-`);
+  function looksLikeThumb(src) {
+    if (!src) return false;
+    if (ONLY_YTIMG && !src.includes('i.ytimg.com')) return false;
+    // Covers /vi/... plus the oar*.jpg style shorts thumbs, and channel banners/avatars
+    return /i\.ytimg\.com\/(vi|vi_|sb)\/|i\.ytimg\.com\/vi\/|\/oar\d*\.jpg|yt3\.googleusercontent\.com\//i.test(src);
+  }
 
-	const ICONS = {
-		pixelated: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="4" height="4"/><rect x="10" y="2" width="4" height="4"/><rect x="18" y="2" width="4" height="4"/><rect x="6" y="6" width="4" height="4"/><rect x="14" y="6" width="4" height="4"/><rect x="2" y="10" width="4" height="4"/><rect x="10" y="10" width="4" height="4"/><rect x="18" y="10" width="4" height="4"/><rect x="6" y="14" width="4" height="4"/><rect x="14" y="14" width="4" height="4"/><rect x="2" y="18" width="4" height="4"/><rect x="10" y="18" width="4" height="4"/><rect x="18" y="18" width="4" height="4"/></svg>',
-		disabled: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" opacity="0.4"><rect x="2" y="2" width="4" height="4"/><rect x="10" y="2" width="4" height="4"/><rect x="18" y="2" width="4" height="4"/><rect x="6" y="6" width="4" height="4"/><rect x="14" y="6" width="4" height="4"/><rect x="2" y="10" width="4" height="4"/><rect x="10" y="10" width="4" height="4"/><rect x="18" y="10" width="4" height="4"/><rect x="6" y="14" width="4" height="4"/><rect x="14" y="14" width="4" height="4"/><rect x="2" y="18" width="4" height="4"/><rect x="10" y="18" width="4" height="4"/><rect x="18" y="18" width="4" height="4"/><line x1="2" y1="22" x2="22" y2="2" stroke="currentColor" stroke-width="2"/></svg>',
-		grayscale: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2 A10 10 0 0 1 12 22 Z" fill="currentColor"/></svg>',
-		colored: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="8" cy="10" r="3" fill="#ff6b6b"/><circle cx="16" cy="10" r="3" fill="#4ecdc4"/><circle cx="12" cy="16" r="3" fill="#ffe66d"/></svg>',
-	};
+  async function pixelateImgElement(img) {
+    if (!img || img.dataset.ytPixelated === '1') return;
 
-	const THUMB_IMG_SELECTOR = [
-		'a[href^="/shorts/"] img',
-		'a.reel-item-endpoint img',
-		'ytm-shorts-lockup-view-model-v2 img',
-		'ytm-shorts-lockup-view-model img',
-		'yt-thumbnail-view-model img',
-		'.ytThumbnailViewModelImage img',
-		'ytd-thumbnail img',
-		'a#thumbnail img',
-		'yt-image-banner-view-model img',
-		'.yt-spec-avatar-shape img',
-		'img.ytCoreImageHost',
-		'img[class*="ytCoreImage"]',
-		'img[src*="i.ytimg.com/vi/"]',
-	].join(', ');
+    const src = getBestSrc(img);
+    if (!looksLikeThumb(src)) return;
 
-	// ===========================================================
+    // Wait until we have dimensions
+    if (!img.complete || !img.naturalWidth || !img.naturalHeight) return;
 
-	const debounce = function (func, wait, immediate) {
-		let timeout;
-		return (...args) => {
-			const later = () => {
-				timeout = null;
-				if (!immediate) func.apply(this, args);
-			};
-			const callNow = immediate && !timeout;
-			clearTimeout(timeout);
-			timeout = setTimeout(later, wait);
-			if (callNow) func.apply(this, args);
-		};
-	};
+    img.dataset.ytPixelated = '1';
 
-	// ===========================================================
+    // Build a fresh Image with CORS enabled so canvas export works (if allowed by server)
+    const i = new Image();
+    i.crossOrigin = 'anonymous';
+    // Avoid leaking referrer (sometimes helps with CORS/CDN behavior)
+    i.referrerPolicy = 'no-referrer';
 
-	const findButtonAreaTarget = () => {
-		return document.querySelector('#container #end #buttons');
-	};
+    const loadPromise = new Promise((resolve, reject) => {
+      i.onload = resolve;
+      i.onerror = reject;
+    });
 
-	// ===========================================================
+    // Use the best current src (not necessarily img.src if srcset is used)
+    i.src = src;
 
-	const updateGrayscaleClass = () => {
-		const isGrayscale = getGrayscaleState() === 'grayscale';
-		document.querySelectorAll(THUMB_IMG_SELECTOR).forEach((img) => {
-			if (isGrayscale) {
-				img.classList.add('YT-GRAYSCALE-ON');
-			} else {
-				img.classList.remove('YT-GRAYSCALE-ON');
-			}
-		});
-	};
+    try {
+      await loadPromise;
 
-	// ===========================================================
+      const w = i.naturalWidth || img.naturalWidth;
+      const h = i.naturalHeight || img.naturalHeight;
 
-	function getBestSrc(img) {
-		return img.currentSrc || img.src || '';
-	}
+      // Step 1: shrink into tiny canvas
+      const sw = Math.max(8, Math.round(w * PIXEL_SCALE));
+      const sh = Math.max(8, Math.round(h * PIXEL_SCALE));
 
-	function looksLikeThumb(src) {
-		if (!src) return false;
-		if (ONLY_YTIMG && !src.includes('i.ytimg.com')) return false;
-		return /i\.ytimg\.com\/(vi|vi_|sb)\/|i\.ytimg\.com\/vi\/|\/oar\d*\.jpg|yt3\.googleusercontent\.com\//i.test(src);
-	}
+      const small = document.createElement('canvas');
+      small.width = sw;
+      small.height = sh;
+      const sctx = small.getContext('2d', { willReadFrequently: false });
+      sctx.imageSmoothingEnabled = true;
+      sctx.drawImage(i, 0, 0, sw, sh);
 
-	async function pixelateImgElement(img) {
-		if (!img || img.dataset.ytPixelated === '1') return;
-		if (getPixelateState() !== 'pixelated') return;
+      // Step 2: scale it back up without smoothing (this creates pixel blocks)
+      const out = document.createElement('canvas');
+      out.width = w;
+      out.height = h;
+      const octx = out.getContext('2d', { willReadFrequently: false });
+      octx.imageSmoothingEnabled = false;
+      octx.drawImage(small, 0, 0, sw, sh, 0, 0, w, h);
 
-		const src = getBestSrc(img);
-		if (!looksLikeThumb(src)) return;
-		if (!img.complete || !img.naturalWidth || !img.naturalHeight) return;
+      // Export low-quality JPEG for extra crunch
+      const dataUrl = out.toDataURL('image/jpeg', JPEG_QUALITY);
 
-		img.dataset.ytPixelated = '1';
+      // Preserve original so you can revert in devtools if needed
+      if (!img.dataset.ytOrigSrc) img.dataset.ytOrigSrc = src;
 
-		const i = new Image();
-		i.crossOrigin = 'anonymous';
-		i.referrerPolicy = 'no-referrer';
+      // Replace the displayed image
+      img.src = dataUrl;
+      // Some YT images use srcset/currentSrc; disabling srcset avoids it snapping back
+      img.removeAttribute('srcset');
+    } catch (e) {
+      // Most common failure is canvas being "tainted" due to CORS.
+      // In that case you’ll still at least get grayscale from CSS.
+      img.dataset.ytPixelated = '0';
+    }
+  }
 
-		const loadPromise = new Promise((resolve, reject) => {
-			i.onload = resolve;
-			i.onerror = reject;
-		});
+  // Batch processing for performance
+  let queued = new Set();
+  let scheduled = false;
 
-		i.src = src;
+  function queueProcess(root = document) {
+    const imgs = root.querySelectorAll(THUMB_IMG_SELECTOR);
+    for (const img of imgs) queued.add(img);
 
-		try {
-			await loadPromise;
+    if (!scheduled) {
+      scheduled = true;
+      requestAnimationFrame(async () => {
+        scheduled = false;
+        const toProcess = Array.from(queued);
+        queued.clear();
+        for (const img of toProcess) {
+          // Try now; if not ready, it’ll get picked up again by mutations/load
+          pixelateImgElement(img);
+        }
+      });
+    }
+  }
 
-			const w = i.naturalWidth || img.naturalWidth;
-			const h = i.naturalHeight || img.naturalHeight;
+  function hookLoads(root = document) {
+    // Catch late-loading thumbs (lazy images)
+    root.addEventListener?.('load', (ev) => {
+      const t = ev.target;
+      if (t && t.tagName === 'IMG' && t.matches(THUMB_IMG_SELECTOR)) {
+        pixelateImgElement(t);
+      }
+    }, true);
+  }
 
-			const sw = Math.max(8, Math.round(w * PIXEL_SCALE));
-			const sh = Math.max(8, Math.round(h * PIXEL_SCALE));
+  injectStyle(STYLE);
 
-			const small = document.createElement('canvas');
-			small.width = sw;
-			small.height = sh;
-			const sctx = small.getContext('2d', { willReadFrequently: false });
-			sctx.imageSmoothingEnabled = true;
-			sctx.drawImage(i, 0, 0, sw, sh);
+  const onReady = () => {
+    hookLoads(document);
+    queueProcess(document);
 
-			const out = document.createElement('canvas');
-			out.width = w;
-			out.height = h;
-			const octx = out.getContext('2d', { willReadFrequently: false });
-			octx.imageSmoothingEnabled = false;
-			octx.drawImage(small, 0, 0, sw, sh, 0, 0, w, h);
+    const mo = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        // Handle newly added nodes
+        for (const node of m.addedNodes) {
+          if (node && node.nodeType === 1) {
+            queueProcess(node);
+          }
+        }
+        // Handle src attribute changes (tab switches reuse DOM, just change src)
+        if (m.type === 'attributes' && m.attributeName === 'src') {
+          const img = m.target;
+          if (img && img.tagName === 'IMG' && img.matches(THUMB_IMG_SELECTOR)) {
+            // Reset pixelated flag so it gets reprocessed
+            img.dataset.ytPixelated = '0';
+            pixelateImgElement(img);
+          }
+        }
+      }
+    });
 
-			const dataUrl = out.toDataURL('image/jpeg', JPEG_QUALITY);
+    mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
+  };
 
-			if (!img.dataset.ytOrigSrc) img.dataset.ytOrigSrc = src;
-
-			img.src = dataUrl;
-			img.removeAttribute('srcset');
-
-			if (getGrayscaleState() === 'grayscale') {
-				img.classList.add('YT-GRAYSCALE-ON');
-			}
-		} catch (e) {
-			img.dataset.ytPixelated = '0';
-		}
-	}
-
-	// ===========================================================
-
-	let queued = new Set();
-	let scheduled = false;
-
-	function queueProcess(root = document) {
-		const imgs = root.querySelectorAll(THUMB_IMG_SELECTOR);
-		for (const img of imgs) queued.add(img);
-
-		if (!scheduled) {
-			scheduled = true;
-			requestAnimationFrame(async () => {
-				scheduled = false;
-				const toProcess = Array.from(queued);
-				queued.clear();
-				for (const img of toProcess) {
-					pixelateImgElement(img);
-				}
-				updateGrayscaleClass();
-			});
-		}
-	}
-
-	// ===========================================================
-
-	const renderButtons = () => {
-		const target = findButtonAreaTarget();
-		if (!target) return;
-
-		const existingButtons = document.querySelector('.YT-PIXELATE-BUTTONS');
-
-		const buttonArea = document.createElement('div');
-		buttonArea.classList.add('YT-PIXELATE-BUTTONS');
-
-		// Button 1: Pixelate toggle
-		const pixelateState = getPixelateState();
-		const pixelateBtn = document.createElement('button');
-		pixelateBtn.classList.add('YT-PIXELATE-BUTTON');
-		if (pixelateState !== 'pixelated') {
-			pixelateBtn.classList.add('YT-PIXELATE-BUTTON-DISABLED');
-		}
-		pixelateBtn.innerHTML = pixelateState === 'pixelated' ? ICONS.pixelated : ICONS.disabled;
-		pixelateBtn.title = `Pixelation: ${pixelateState}`;
-		buttonArea.appendChild(pixelateBtn);
-
-		pixelateBtn.addEventListener('click', () => {
-			const newState = pixelateState === 'pixelated' ? 'disabled' : 'pixelated';
-			localStorage.setItem(PIXELATE_STATE_KEY, newState);
-			window.location.reload();
-		});
-
-		// Button 2: Grayscale toggle
-		const grayscaleState = getGrayscaleState();
-		const grayscaleBtn = document.createElement('button');
-		grayscaleBtn.classList.add('YT-PIXELATE-BUTTON');
-		if (grayscaleState !== 'grayscale') {
-			grayscaleBtn.classList.add('YT-PIXELATE-BUTTON-DISABLED');
-		}
-		grayscaleBtn.innerHTML = grayscaleState === 'grayscale' ? ICONS.grayscale : ICONS.colored;
-		grayscaleBtn.title = `Color: ${grayscaleState}`;
-		buttonArea.appendChild(grayscaleBtn);
-
-		grayscaleBtn.addEventListener('click', () => {
-			const newState = grayscaleState === 'grayscale' ? 'colored' : 'grayscale';
-			localStorage.setItem(GRAYSCALE_STATE_KEY, newState);
-			updateGrayscaleClass();
-			renderButtons();
-		});
-
-		// Insert buttons into DOM
-		if (existingButtons) {
-			target.parentNode.replaceChild(buttonArea, existingButtons);
-		} else {
-			target.parentNode.insertBefore(buttonArea, target);
-		}
-	};
-
-	// ===========================================================
-
-	const run = debounce(() => {
-		queueProcess(document);
-		renderButtons();
-	}, 250);
-
-	// ===========================================================
-
-	const observeDOM = (() => {
-		const MutationObserver =
-			window.MutationObserver || window.WebKitMutationObserver;
-		const eventListenerSupported = window.addEventListener;
-
-		return (obj, callback) => {
-			if (!obj) return;
-
-			if (MutationObserver) {
-				const obs = new MutationObserver((mutations, _observer) => {
-					if (
-						mutations.length === 1 &&
-						mutations[0].addedNodes?.length === 1 &&
-						mutations[0].addedNodes[0].classList?.contains('YT-PIXELATE-BUTTONS')
-					) {
-						return;
-					}
-
-					if (
-						mutations[0].addedNodes.length ||
-						mutations[0].removedNodes.length
-					) {
-						callback(mutations);
-					}
-				});
-
-				obs.observe(obj, { childList: true, subtree: true });
-			} else if (eventListenerSupported) {
-				obj.addEventListener('DOMNodeInserted', callback, false);
-				obj.addEventListener('DOMNodeRemoved', callback, false);
-			}
-		};
-	})();
-
-	// ===========================================================
-
-	observeDOM(document.body, run);
-
-	run();
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', onReady, { once: true });
+  } else {
+    onReady();
+  }
 })();
