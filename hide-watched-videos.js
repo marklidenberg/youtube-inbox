@@ -198,40 +198,6 @@ ytd-thumbnail button[aria-label="Watch later"],
 ytd-thumbnail button[aria-label="Add to queue"],
 #hover-overlays ytd-thumbnail-overlay-toggle-button-renderer { display: none !important; }
 
-/* Thumbnail action buttons */
-.YT-HWV-THUMB-ACTIONS {
-	position: absolute;
-	bottom: 4px;
-	right: 4px;
-	display: flex;
-	gap: 2px;
-	z-index: 100;
-	opacity: 0;
-	transition: opacity 0.2s;
-}
-
-ytd-thumbnail:hover .YT-HWV-THUMB-ACTIONS,
-.YT-HWV-THUMB-ACTIONS:hover { opacity: 1; }
-
-.YT-HWV-THUMB-BTN {
-	width: 28px;
-	height: 28px;
-	border: none;
-	border-radius: 4px;
-	background: rgba(0, 0, 0, 0.7);
-	color: white;
-	cursor: pointer;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	padding: 0;
-}
-
-.YT-HWV-THUMB-BTN:hover { background: rgba(0, 0, 0, 0.9); }
-.YT-HWV-THUMB-BTN.active { color: #3ea6ff; }
-.YT-HWV-THUMB-BTN.liked { color: #3ea6ff; }
-.YT-HWV-THUMB-BTN.disliked { color: #f44336; }
-
 /* Video page watched button - inside like/dislike segmented button */
 .YT-HWV-SEGMENTED-MODIFIED { display: flex !important; align-items: center; }
 
@@ -284,12 +250,6 @@ ytd-masthead #container.ytd-masthead {
 			'<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100</text><line x1="2" y1="20" x2="22" y2="4" stroke="currentColor" stroke-width="2"/></svg>',
 		name: 'Toggle Watched Videos',
 		stateKey: 'YTHWV_STATE',
-	};
-
-	const ICONS = {
-		like: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z"/></svg>',
-		dislike: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M15 3H6c-.83 0-1.54.5-1.84 1.22l-3.02 7.05c-.09.23-.14.47-.14.73v2c0 1.1.9 2 2 2h6.31l-.95 4.57-.03.32c0 .41.17.79.44 1.06L9.83 23l6.59-6.59c.36-.36.58-.86.58-1.41V5c0-1.1-.9-2-2-2zm4 0v12h4V3h-4z"/></svg>',
-		watched: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>',
 	};
 
 	// ===========================================================
@@ -545,113 +505,6 @@ ytd-masthead #container.ytd-masthead {
 	};
 
 	// ===========================================================
-	// Thumbnail action buttons (like/dislike/watched)
-
-	const getVideoIdFromThumbnail = (thumbnail) => {
-		const link = thumbnail.querySelector('a#thumbnail, a.yt-simple-endpoint');
-		if (!link) return null;
-		const href = link.getAttribute('href');
-		if (!href) return null;
-		const match = href.match(/[?&]v=([^&]+)/);
-		return match ? match[1] : null;
-	};
-
-	const clickYouTubeButton = (videoId, buttonType) => {
-		// Open video in background, find and click the button, then close
-		// This is a workaround since YouTube API requires authentication
-		const url = `https://www.youtube.com/watch?v=${videoId}`;
-		const iframe = document.createElement('iframe');
-		iframe.style.display = 'none';
-		iframe.src = url;
-		document.body.appendChild(iframe);
-
-		iframe.onload = () => {
-			setTimeout(() => {
-				try {
-					const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-					let btn;
-					if (buttonType === 'like') {
-						btn = iframeDoc.querySelector('like-button-view-model button, #segmented-like-button button, button[aria-label*="like" i]:not([aria-label*="dislike"])');
-					} else if (buttonType === 'dislike') {
-						btn = iframeDoc.querySelector('dislike-button-view-model button, #segmented-dislike-button button, button[aria-label*="dislike" i]');
-					}
-					if (btn) btn.click();
-				} catch (e) {
-					logDebug('Cannot access iframe content (CORS)', e);
-				}
-				setTimeout(() => iframe.remove(), 500);
-			}, 2000);
-		};
-	};
-
-	const markVideoAsWatched = (videoId) => {
-		// Jump to near end of video to mark as watched
-		const url = `https://www.youtube.com/watch?v=${videoId}&t=9999999`;
-		const iframe = document.createElement('iframe');
-		iframe.style.display = 'none';
-		iframe.src = url;
-		document.body.appendChild(iframe);
-		setTimeout(() => iframe.remove(), 3000);
-		logDebug(`Marked video ${videoId} as watched`);
-	};
-
-	const addThumbnailActions = () => {
-		const thumbnails = document.querySelectorAll('ytd-thumbnail:not([data-ythwv-actions])');
-
-		thumbnails.forEach((thumbnail) => {
-			const videoId = getVideoIdFromThumbnail(thumbnail);
-			if (!videoId) return;
-
-			thumbnail.setAttribute('data-ythwv-actions', 'true');
-			thumbnail.style.position = 'relative';
-
-			const actionsDiv = document.createElement('div');
-			actionsDiv.classList.add('YT-HWV-THUMB-ACTIONS');
-
-			// Like button
-			const likeBtn = document.createElement('button');
-			likeBtn.classList.add('YT-HWV-THUMB-BTN');
-			likeBtn.innerHTML = ICONS.like;
-			likeBtn.title = 'Like';
-			likeBtn.addEventListener('click', (e) => {
-				e.preventDefault();
-				e.stopPropagation();
-				likeBtn.classList.toggle('liked');
-				clickYouTubeButton(videoId, 'like');
-			});
-
-			// Dislike button
-			const dislikeBtn = document.createElement('button');
-			dislikeBtn.classList.add('YT-HWV-THUMB-BTN');
-			dislikeBtn.innerHTML = ICONS.dislike;
-			dislikeBtn.title = 'Dislike';
-			dislikeBtn.addEventListener('click', (e) => {
-				e.preventDefault();
-				e.stopPropagation();
-				dislikeBtn.classList.toggle('disliked');
-				clickYouTubeButton(videoId, 'dislike');
-			});
-
-			// Watched button
-			const watchedBtn = document.createElement('button');
-			watchedBtn.classList.add('YT-HWV-THUMB-BTN');
-			watchedBtn.innerHTML = ICONS.watched;
-			watchedBtn.title = 'Mark as watched';
-			watchedBtn.addEventListener('click', (e) => {
-				e.preventDefault();
-				e.stopPropagation();
-				watchedBtn.classList.add('active');
-				markVideoAsWatched(videoId);
-			});
-
-			actionsDiv.appendChild(likeBtn);
-			actionsDiv.appendChild(dislikeBtn);
-			actionsDiv.appendChild(watchedBtn);
-			thumbnail.appendChild(actionsDiv);
-		});
-	};
-
-	// ===========================================================
 	// Video page watched button
 
 	const addVideoPageWatchedButton = () => {
@@ -695,7 +548,6 @@ ytd-masthead #container.ytd-masthead {
 		logDebug('Running check for watched videos');
 		updateClassOnWatchedItems();
 		renderButtons();
-		addThumbnailActions();
 		addVideoPageWatchedButton();
 	}, 250);
 
