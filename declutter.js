@@ -80,8 +80,10 @@
 .DECLUTTER-HIDE-SHORTS ytd-guide-entry-renderer:has(a[title="Shorts"]) { display: none !important; }
 .DECLUTTER-HIDE-CHANNEL-JUNK ytd-tabbed-page-header #page-header-container { display: none !important; }
 .DECLUTTER-HIDE-CHANNEL-JUNK ytd-c4-tabbed-header-renderer { display: none !important; }
-.DECLUTTER-HIDE-CHANNEL-JUNK yt-tab-shape:not([tab-title="Home"]):not([tab-title="Videos"]):not([tab-title="Playlists"]) { display: none !important; }
-.DECLUTTER-HIDE-CHANNEL-JUNK tp-yt-paper-tab:not([aria-label="Home"]):not([aria-label="Videos"]):not([aria-label="Playlists"]) { display: none !important; }
+.DECLUTTER-HIDE-CHANNEL-JUNK yt-tab-shape:not([tab-title="Videos"]):not([tab-title="Playlists"]) { display: none !important; }
+.DECLUTTER-HIDE-CHANNEL-JUNK tp-yt-paper-tab:not([aria-label="Videos"]):not([aria-label="Playlists"]) { display: none !important; }
+.DECLUTTER-HIDE-CHANNEL-JUNK .yt-tab-shape__tab-bar { display: none !important; }
+.DECLUTTER-HIDE-CHANNEL-JUNK .tabGroupShapeSlider { display: none !important; }
 .DECLUTTER-HIDE-DIVIDERS ytd-guide-section-renderer { border: none !important; }
 .DECLUTTER-HIDE-DIVIDERS ytd-guide-collapsible-section-entry-renderer { border: none !important; }
 .DECLUTTER-HIDE-DIVIDERS ytd-item-section-renderer { border: none !important; }
