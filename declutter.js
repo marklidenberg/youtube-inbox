@@ -15,7 +15,7 @@
 		trustedTypes.createPolicy('default', { createHTML: (s) => s, createScript: (s) => s, createScriptURL: (s) => s });
 	}
 
-	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', TAGS: 'DECLUTTER_HIDE_TAGS', SIDEBAR: 'DECLUTTER_HIDE_SIDEBAR', COMMENTS: 'DECLUTTER_HIDE_COMMENTS', RECOMMENDATIONS: 'DECLUTTER_HIDE_RECOMMENDATIONS', DESCRIPTION_JUNK: 'DECLUTTER_HIDE_DESCRIPTION_JUNK', SHORTS: 'DECLUTTER_HIDE_SHORTS' };
+	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', TAGS: 'DECLUTTER_HIDE_TAGS', SIDEBAR: 'DECLUTTER_HIDE_SIDEBAR', COMMENTS: 'DECLUTTER_HIDE_COMMENTS', RECOMMENDATIONS: 'DECLUTTER_HIDE_RECOMMENDATIONS', DESCRIPTION_JUNK: 'DECLUTTER_HIDE_DESCRIPTION_JUNK', SHORTS: 'DECLUTTER_HIDE_SHORTS', CHANNEL_JUNK: 'DECLUTTER_HIDE_CHANNEL_JUNK' };
 	const INIT_KEY = 'DECLUTTER_INITIALIZED';
 	if (!localStorage.getItem(INIT_KEY)) {
 		Object.values(KEYS).forEach((k) => localStorage.setItem(k, 'true'));
@@ -65,7 +65,11 @@
 .DECLUTTER-HIDE-SHORTS ytd-shorts { display: none !important; }
 .DECLUTTER-HIDE-SHORTS a[title="Shorts"] { display: none !important; }
 .DECLUTTER-HIDE-SHORTS ytd-mini-guide-entry-renderer:has(a[title="Shorts"]) { display: none !important; }
-.DECLUTTER-HIDE-SHORTS ytd-guide-entry-renderer:has(a[title="Shorts"]) { display: none !important; }`;
+.DECLUTTER-HIDE-SHORTS ytd-guide-entry-renderer:has(a[title="Shorts"]) { display: none !important; }
+.DECLUTTER-HIDE-CHANNEL-JUNK ytd-tabbed-page-header #page-header-container { display: none !important; }
+.DECLUTTER-HIDE-CHANNEL-JUNK ytd-c4-tabbed-header-renderer { display: none !important; }
+.DECLUTTER-HIDE-CHANNEL-JUNK yt-tab-group-shape { display: none !important; }
+.DECLUTTER-HIDE-CHANNEL-JUNK tp-yt-paper-tabs#tabsContainer { display: none !important; }`;
 	document.head.appendChild(style);
 
 	const applySettings = () => {
@@ -79,6 +83,7 @@
 		document.body.classList.toggle('DECLUTTER-HIDE-RECOMMENDATIONS', get(KEYS.RECOMMENDATIONS));
 		document.body.classList.toggle('DECLUTTER-HIDE-DESCRIPTION-JUNK', get(KEYS.DESCRIPTION_JUNK));
 		document.body.classList.toggle('DECLUTTER-HIDE-SHORTS', get(KEYS.SHORTS));
+		document.body.classList.toggle('DECLUTTER-HIDE-CHANNEL-JUNK', get(KEYS.CHANNEL_JUNK));
 	};
 	applySettings();
 
@@ -101,6 +106,7 @@
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcRecommendations"${get(KEYS.RECOMMENDATIONS) ? ' checked' : ''}>Hide Recommendations</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcDescriptionJunk"${get(KEYS.DESCRIPTION_JUNK) ? ' checked' : ''}>Hide Description Junk</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcShorts"${get(KEYS.SHORTS) ? ' checked' : ''}>Hide Shorts</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcChannelJunk"${get(KEYS.CHANNEL_JUNK) ? ' checked' : ''}>Hide Channel Junk</label>
 </div>`;
 
 		const menu = wrap.querySelector('.DECLUTTER-MENU');
@@ -121,6 +127,7 @@
 		wrap.querySelector('#dcRecommendations').onchange = (e) => { set(KEYS.RECOMMENDATIONS, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcDescriptionJunk').onchange = (e) => { set(KEYS.DESCRIPTION_JUNK, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcShorts').onchange = (e) => { set(KEYS.SHORTS, e.target.checked); applySettings(); };
+		wrap.querySelector('#dcChannelJunk').onchange = (e) => { set(KEYS.CHANNEL_JUNK, e.target.checked); applySettings(); };
 		document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) menu.classList.remove('open'); });
 
 		target.parentNode.insertBefore(wrap, target);
@@ -128,4 +135,21 @@
 
 	new MutationObserver(render).observe(document.body, { childList: true, subtree: true });
 	render();
+
+	// Redirect channel Home/Shorts/Posts to Videos when channel junk is hidden
+	const redirectToVideos = () => {
+		if (!get(KEYS.CHANNEL_JUNK)) return;
+		const path = window.location.pathname;
+		const channelMatch = path.match(/^\/@[^\/]+$/) || path.match(/^\/channel\/[^\/]+$/) || path.match(/^\/c\/[^\/]+$/);
+		const isNonVideosTab = path.match(/\/(shorts|community|featured)$/);
+		if (channelMatch || isNonVideosTab) {
+			const basePath = path.replace(/\/(shorts|community|featured)$/, '');
+			const videosPath = basePath + '/videos';
+			if (path !== videosPath) {
+				window.location.replace(videosPath);
+			}
+		}
+	};
+	redirectToVideos();
+	window.addEventListener('yt-navigate-finish', redirectToVideos);
 })();
