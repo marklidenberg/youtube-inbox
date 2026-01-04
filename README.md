@@ -1,11 +1,12 @@
 # youtube-inbox
 
-A cleaner YouTube experience for focused watching: hide distractions and already-watched videos.
+A cleaner YouTube experience for focused watching: hide watched videos and distractions.
 
-## How to install 
+Since there's no reliable way to mark videos as fully watched, the script hides liked/disliked videos—letting you use ratings as a "watched" marker. 
+
+🪄 **Vibe coded**.
+
+## How to install
 
 Use `UserScripts` or `Tampermonkey` extensions.
 
-## Issues
-
-- YouTube doesn't mark videos as watched even when scrolled to the end. No method found to mark videos as watched directly from the thumbnail view, which significantly limits usability. 
