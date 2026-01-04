@@ -13,14 +13,14 @@ The script does 2 things:
 Use `UserScripts` or `Tampermonkey` extensions.
 
 ## Declutter
-Before: 
+### Before
 
 ![Before](docs/declutter-before.png)
 
-After: 
+### After
 
 ![After](docs/declutter-after.png)
 
-Options:
+### Options
 
 <img src="docs/declutter-options.png" width="33%">
