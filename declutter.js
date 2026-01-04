@@ -15,7 +15,7 @@
 		trustedTypes.createPolicy('default', { createHTML: (s) => s, createScript: (s) => s, createScriptURL: (s) => s });
 	}
 
-	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', TAGS: 'DECLUTTER_HIDE_TAGS', SIDEBAR: 'DECLUTTER_HIDE_SIDEBAR' };
+	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', TAGS: 'DECLUTTER_HIDE_TAGS', SIDEBAR: 'DECLUTTER_HIDE_SIDEBAR', COMMENTS: 'DECLUTTER_HIDE_COMMENTS', RECOMMENDATIONS: 'DECLUTTER_HIDE_RECOMMENDATIONS' };
 	const INIT_KEY = 'DECLUTTER_INITIALIZED';
 	if (!localStorage.getItem(INIT_KEY)) {
 		Object.values(KEYS).forEach((k) => localStorage.setItem(k, 'true'));
@@ -48,7 +48,11 @@
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Report history"]) { display: none !important; }
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Help"]) { display: none !important; }
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Send feedback"]) { display: none !important; }
-.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Shorts"]) { display: none !important; }`;
+.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Shorts"]) { display: none !important; }
+.DECLUTTER-HIDE-COMMENTS ytd-comments#comments { display: none !important; }
+.DECLUTTER-HIDE-RECOMMENDATIONS ytd-watch-next-secondary-results-renderer { display: none !important; }
+.DECLUTTER-HIDE-RECOMMENDATIONS ytd-rich-grid-renderer { display: none !important; }
+.DECLUTTER-HIDE-RECOMMENDATIONS ytd-shelf-renderer { display: none !important; }`;
 	document.head.appendChild(style);
 
 	const applySettings = () => {
@@ -58,6 +62,8 @@
 		document.body.classList.toggle('DECLUTTER-HIDE-MICROPHONE', get(KEYS.MICROPHONE));
 		document.body.classList.toggle('DECLUTTER-HIDE-TAGS', get(KEYS.TAGS));
 		document.body.classList.toggle('DECLUTTER-HIDE-SIDEBAR', get(KEYS.SIDEBAR));
+		document.body.classList.toggle('DECLUTTER-HIDE-COMMENTS', get(KEYS.COMMENTS));
+		document.body.classList.toggle('DECLUTTER-HIDE-RECOMMENDATIONS', get(KEYS.RECOMMENDATIONS));
 	};
 	applySettings();
 
@@ -76,6 +82,8 @@
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcMicrophone"${get(KEYS.MICROPHONE) ? ' checked' : ''}>Hide Microphone</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcTags"${get(KEYS.TAGS) ? ' checked' : ''}>Hide Tags</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcSidebar"${get(KEYS.SIDEBAR) ? ' checked' : ''}>Hide Sidebar Junk</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcComments"${get(KEYS.COMMENTS) ? ' checked' : ''}>Hide Comments</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcRecommendations"${get(KEYS.RECOMMENDATIONS) ? ' checked' : ''}>Hide Recommendations</label>
 </div>`;
 
 		const menu = wrap.querySelector('.DECLUTTER-MENU');
@@ -92,6 +100,8 @@
 		wrap.querySelector('#dcMicrophone').onchange = (e) => { set(KEYS.MICROPHONE, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcTags').onchange = (e) => { set(KEYS.TAGS, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcSidebar').onchange = (e) => { set(KEYS.SIDEBAR, e.target.checked); applySettings(); };
+		wrap.querySelector('#dcComments').onchange = (e) => { set(KEYS.COMMENTS, e.target.checked); applySettings(); };
+		wrap.querySelector('#dcRecommendations').onchange = (e) => { set(KEYS.RECOMMENDATIONS, e.target.checked); applySettings(); };
 		document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) menu.classList.remove('open'); });
 
 		target.parentNode.insertBefore(wrap, target);
