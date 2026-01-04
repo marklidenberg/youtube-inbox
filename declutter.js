@@ -15,7 +15,7 @@
 		trustedTypes.createPolicy('default', { createHTML: (s) => s, createScript: (s) => s, createScriptURL: (s) => s });
 	}
 
-	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', TAGS: 'DECLUTTER_HIDE_TAGS' };
+	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', TAGS: 'DECLUTTER_HIDE_TAGS', SIDEBAR: 'DECLUTTER_HIDE_SIDEBAR' };
 	const INIT_KEY = 'DECLUTTER_INITIALIZED';
 	if (!localStorage.getItem(INIT_KEY)) {
 		Object.values(KEYS).forEach((k) => localStorage.setItem(k, 'true'));
@@ -39,7 +39,11 @@
 .DECLUTTER-HIDE-CREATE button[aria-label="Create"] { display: none !important; }
 .DECLUTTER-HIDE-NOTIFICATIONS ytd-notification-topbar-button-renderer { display: none !important; }
 .DECLUTTER-HIDE-MICROPHONE #voice-search-button { display: none !important; }
-.DECLUTTER-HIDE-TAGS ytd-feed-filter-chip-bar-renderer { display: none !important; }`;
+.DECLUTTER-HIDE-TAGS ytd-feed-filter-chip-bar-renderer { display: none !important; }
+.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer #sections > ytd-guide-section-renderer:has(h3:not([hidden])) { display: none !important; }
+.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer #sections > ytd-guide-collapsible-entry-renderer { display: none !important; }
+.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer #footer { display: none !important; }
+.DECLUTTER-HIDE-SIDEBAR ytd-mini-guide-renderer { display: none !important; }`;
 	document.head.appendChild(style);
 
 	const applySettings = () => {
@@ -48,6 +52,7 @@
 		document.body.classList.toggle('DECLUTTER-HIDE-NOTIFICATIONS', get(KEYS.NOTIFICATIONS));
 		document.body.classList.toggle('DECLUTTER-HIDE-MICROPHONE', get(KEYS.MICROPHONE));
 		document.body.classList.toggle('DECLUTTER-HIDE-TAGS', get(KEYS.TAGS));
+		document.body.classList.toggle('DECLUTTER-HIDE-SIDEBAR', get(KEYS.SIDEBAR));
 	};
 	applySettings();
 
@@ -65,6 +70,7 @@
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcNotifications"${get(KEYS.NOTIFICATIONS) ? ' checked' : ''}>Hide Notifications button</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcMicrophone"${get(KEYS.MICROPHONE) ? ' checked' : ''}>Hide Microphone</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcTags"${get(KEYS.TAGS) ? ' checked' : ''}>Hide Tags</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcSidebar"${get(KEYS.SIDEBAR) ? ' checked' : ''}>Hide Sidebar Junk</label>
 </div>`;
 
 		const menu = wrap.querySelector('.DECLUTTER-MENU');
@@ -80,6 +86,7 @@
 		wrap.querySelector('#dcNotifications').onchange = (e) => { set(KEYS.NOTIFICATIONS, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcMicrophone').onchange = (e) => { set(KEYS.MICROPHONE, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcTags').onchange = (e) => { set(KEYS.TAGS, e.target.checked); applySettings(); };
+		wrap.querySelector('#dcSidebar').onchange = (e) => { set(KEYS.SIDEBAR, e.target.checked); applySettings(); };
 		document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) menu.classList.remove('open'); });
 
 		target.parentNode.insertBefore(wrap, target);
