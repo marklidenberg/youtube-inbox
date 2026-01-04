@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube - Pixelate + Grayscale thumbnails (Videos + Shorts)
 // @namespace    local
-// @version      1.3
+// @version      1.0
 // @description  Makes YouTube video + Shorts thumbnails grayscale and very pixelated (handles dynamic loading)
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
@@ -15,7 +15,8 @@
     // ---- TWEAK THESE ----
     const PIXEL_SCALE = 0.15;      // smaller = chunkier pixels (try 0.04 .. 0.10)
     const JPEG_QUALITY = 0.25;     // lower = more artifacts (0.15 .. 0.40)
-    const ONLY_YTIMG = false;       // only pixelate i.ytimg.com thumbs (safer)
+    const ONLY_YTIMG = false;      // only pixelate i.ytimg.com thumbs (safer)
+    const GRAYSCALE = false;       // set to true to also apply grayscale filter
     // ---------------------
   
     const THUMB_IMG_SELECTOR = [
@@ -43,12 +44,12 @@
       'img[src*="i.ytimg.com/vi/"]',
     ].join(', ');
   
-    // Grayscale via CSS (cheap + immediate)
-    const STYLE = `
+    // Grayscale via CSS (cheap + immediate) - only if enabled
+    const STYLE = GRAYSCALE ? `
       ${THUMB_IMG_SELECTOR} {
         filter: grayscale(100%) !important;
       }
-    `;
+    ` : '';
   
     function injectStyle(cssText) {
       if (document.getElementById('yt-pixel-gray-style')) return;
