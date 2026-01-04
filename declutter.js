@@ -27,7 +27,9 @@
 .DECLUTTER-MENU.open { display: block; }
 .DECLUTTER-WRAP { position: relative; display: flex; align-items: center; }
 .DECLUTTER-ITEM { display: flex; align-items: center; gap: 8px; padding: 8px 0; color: var(--yt-spec-text-primary); font-size: 14px; cursor: pointer; }
-.DECLUTTER-ITEM input { width: 18px; height: 18px; cursor: pointer; }`;
+.DECLUTTER-ITEM input { width: 18px; height: 18px; cursor: pointer; }
+.DECLUTTER-TOGGLE-ALL { width: 100%; padding: 8px 12px; margin-bottom: 8px; background: var(--yt-spec-badge-chip-background); border: none; border-radius: 4px; color: var(--yt-spec-text-primary); font-size: 14px; cursor: pointer; }
+.DECLUTTER-TOGGLE-ALL:hover { background: var(--yt-spec-10-percent-layer); }`;
 	document.head.appendChild(style);
 
 	const render = () => {
@@ -38,12 +40,19 @@
 		wrap.className = 'DECLUTTER-WRAP';
 		wrap.innerHTML = `<button class="DECLUTTER-BTN">Declutter</button>
 <div class="DECLUTTER-MENU">
+<button class="DECLUTTER-TOGGLE-ALL">Toggle All</button>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcA"${get(KEYS.A) ? ' checked' : ''}>Option A</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcB"${get(KEYS.B) ? ' checked' : ''}>Option B</label>
 </div>`;
 
 		const menu = wrap.querySelector('.DECLUTTER-MENU');
+		const checkboxes = wrap.querySelectorAll('.DECLUTTER-ITEM input[type="checkbox"]');
 		wrap.querySelector('.DECLUTTER-BTN').onclick = (e) => { e.stopPropagation(); menu.classList.toggle('open'); };
+		wrap.querySelector('.DECLUTTER-TOGGLE-ALL').onclick = (e) => {
+			e.stopPropagation();
+			const allChecked = [...checkboxes].every((cb) => cb.checked);
+			checkboxes.forEach((cb) => { cb.checked = !allChecked; cb.dispatchEvent(new Event('change', { bubbles: true })); });
+		};
 		wrap.querySelector('#dcA').onchange = (e) => set(KEYS.A, e.target.checked);
 		wrap.querySelector('#dcB').onchange = (e) => set(KEYS.B, e.target.checked);
 		document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) menu.classList.remove('open'); });
