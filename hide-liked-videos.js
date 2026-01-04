@@ -3,7 +3,7 @@
 // @namespace    http://github.com/marklidenberg/youtube-inbox
 // @version      1.0
 // @license      MIT
-// @description  Check and highlight/hide videos that you've already rated (liked or disliked)
+// @description  Dim or hide videos that you've already rated (liked or disliked)
 // @author       Mark Lidenberg
 // @match        http://*.youtube.com/*
 // @match        https://*.youtube.com/*
@@ -21,47 +21,36 @@
 	}
 
 	const STORAGE_KEY = 'YT_HIDE_RATED_STATE';
+	const CACHE_KEY = 'YT_HIDE_RATED_CACHE';
 
 	// States: 'normal' (show all), 'dimmed' (dim rated), 'hidden' (hide rated)
 	const getState = () => localStorage.getItem(STORAGE_KEY) || 'normal';
 	const setState = (state) => localStorage.setItem(STORAGE_KEY, state);
 
+	// Cache for rated videos (only stores videos that ARE rated)
+	const getCache = () => {
+		try {
+			return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+		} catch {
+			return {};
+		}
+	};
+	const setCache = (cache) => localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+	const getCachedRating = (videoId) => getCache()[videoId] || null;
+	const setCachedRating = (videoId, rating) => {
+		// Only cache if video IS rated (like or dislike)
+		if (rating) {
+			const cache = getCache();
+			cache[videoId] = rating;
+			setCache(cache);
+		}
+	};
+
 	// Add styles
 	const style = document.createElement('style');
 	style.textContent = `
-.YT-HRV-RATED { position: relative; }
-.YT-HRV-LIKED::after {
-	content: '❤️';
-	position: absolute;
-	top: 8px;
-	left: 8px;
-	font-size: 20px;
-	z-index: 100;
-	text-shadow: 0 0 4px rgba(0,0,0,0.8);
-	pointer-events: none;
-}
-.YT-HRV-DISLIKED::after {
-	content: '👎';
-	position: absolute;
-	top: 8px;
-	left: 8px;
-	font-size: 20px;
-	z-index: 100;
-	text-shadow: 0 0 4px rgba(0,0,0,0.8);
-	pointer-events: none;
-}
 .YT-HRV-RATED-HIDDEN { display: none !important; }
 .YT-HRV-RATED-DIMMED { opacity: 0.3; }
-.YT-HRV-CHECKING::after {
-	content: '⏳';
-	position: absolute;
-	top: 8px;
-	left: 8px;
-	font-size: 16px;
-	z-index: 100;
-	opacity: 0.7;
-	pointer-events: none;
-}
 
 .YT-HRV-BUTTONS {
 	background: transparent;
@@ -172,21 +161,39 @@
 	// Batch check videos for rating status
 	const checkVideosRatingBatch = async (videoIds) => {
 		const results = {};
+		const uncachedIds = [];
+
+		// First, check cache for already-rated videos
+		for (const videoId of videoIds) {
+			const cached = getCachedRating(videoId);
+			if (cached) {
+				results[videoId] = cached;
+			} else {
+				uncachedIds.push(videoId);
+			}
+		}
+
+		// Only fetch uncached videos
+		if (uncachedIds.length === 0) {
+			return results;
+		}
 
 		// Check videos individually (YouTube doesn't have a batch API for this)
 		// To avoid rate limiting, check in smaller batches with delays
 		const BATCH_SIZE = 3;
 		const DELAY_MS = 500;
 
-		for (let i = 0; i < videoIds.length; i += BATCH_SIZE) {
-			const batch = videoIds.slice(i, i + BATCH_SIZE);
+		for (let i = 0; i < uncachedIds.length; i += BATCH_SIZE) {
+			const batch = uncachedIds.slice(i, i + BATCH_SIZE);
 
 			await Promise.all(batch.map(async (videoId) => {
 				const rating = await checkSingleVideoRating(videoId);
 				results[videoId] = rating;
+				// Cache only rated videos (not unrated ones)
+				setCachedRating(videoId, rating);
 			}));
 
-			if (i + BATCH_SIZE < videoIds.length) {
+			if (i + BATCH_SIZE < uncachedIds.length) {
 				await new Promise(resolve => setTimeout(resolve, DELAY_MS));
 			}
 
@@ -280,16 +287,9 @@
 		const state = getState();
 
 		// Remove all state classes first
-		element.classList.remove(
-			'YT-HRV-RATED', 'YT-HRV-LIKED', 'YT-HRV-DISLIKED',
-			'YT-HRV-RATED-HIDDEN', 'YT-HRV-RATED-DIMMED',
-			'YT-HRV-CHECKING'
-		);
+		element.classList.remove('YT-HRV-RATED-HIDDEN', 'YT-HRV-RATED-DIMMED');
 
 		if (!rating) return;
-
-		element.classList.add('YT-HRV-RATED');
-		element.classList.add(rating === 'like' ? 'YT-HRV-LIKED' : 'YT-HRV-DISLIKED');
 
 		if (state === 'hidden') {
 			element.classList.add('YT-HRV-RATED-HIDDEN');
@@ -308,9 +308,9 @@
 
 		const videoIds = videos.map(v => v.videoId);
 
-		// Mark as checking
+		// Mark as processed
 		videos.forEach(({ element }) => {
-			element.classList.add('YT-HRV-CHECKING', 'YT-HRV-PROCESSED');
+			element.classList.add('YT-HRV-PROCESSED');
 		});
 
 		// Check rating status
@@ -331,14 +331,14 @@
 		});
 	};
 
-	// Icons (like hide-watched-videos.js style)
+	// Icons (same as hide-watched-videos.js - eye icons)
 	const ICONS = {
-		// Normal - show all rated videos (heart outline)
-		normal: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>',
-		// Dimmed - dim rated videos (heart with opacity)
-		dimmed: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" opacity="0.5" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>',
-		// Hidden - hide rated videos (heart with X)
-		hidden: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/><line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2"/></svg>',
+		// Normal - show all rated videos (eye icon)
+		normal: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="currentColor" d="M24 9C14 9 5.46 15.22 2 24c3.46 8.78 12 15 22 15 10.01 0 18.54-6.22 22-15-3.46-8.78-11.99-15-22-15zm0 25c-5.52 0-10-4.48-10-10s4.48-10 10-10 10 4.48 10 10-4.48 10-10 10zm0-16c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"/></svg>',
+		// Dimmed - dim rated videos (eye with opacity)
+		dimmed: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="currentColor" opacity="0.5" d="M24 9C14 9 5.46 15.22 2 24c3.46 8.78 12 15 22 15 10.01 0 18.54-6.22 22-15-3.46-8.78-11.99-15-22-15zm0 25c-5.52 0-10-4.48-10-10s4.48-10 10-10 10 4.48 10 10-4.48 10-10 10zm0-16c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"/></svg>',
+		// Hidden - hide rated videos (eye with slash)
+		hidden: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="currentColor" d="M24 14c5.52 0 10 4.48 10 10 0 1.29-.26 2.52-.71 3.65l5.85 5.85c3.02-2.52 5.4-5.78 6.87-9.5-3.47-8.78-12-15-22.01-15-2.8 0-5.48.5-7.97 1.4l4.32 4.31c1.13-.44 2.36-.71 3.65-.71zM4 8.55l4.56 4.56.91.91C6.17 16.6 3.56 20.03 2 24c3.46 8.78 12 15 22 15 3.1 0 6.06-.6 8.77-1.69l.85.85L39.45 44 42 41.46 6.55 6 4 8.55zM15.06 19.6l3.09 3.09c-.09.43-.15.86-.15 1.31 0 3.31 2.69 6 6 6 .45 0 .88-.06 1.3-.15l3.09 3.09C27.06 33.6 25.58 34 24 34c-5.52 0-10-4.48-10-10 0-1.58.4-3.06 1.06-4.4zm8.61-1.57 6.3 6.3L30 24c0-3.31-2.69-6-6-6l-.33.03z"/></svg>',
 	};
 
 	// Render buttons in header

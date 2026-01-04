@@ -2,6 +2,8 @@
 
 A cleaner YouTube experience for focused watching: hide distractions and already-watched videos.
 
+The whole project is vibe coded. 
+
 ## How to install 
 
 Use `UserScripts` or `Tampermonkey` extensions.
