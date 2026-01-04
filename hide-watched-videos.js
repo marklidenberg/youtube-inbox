@@ -16,7 +16,6 @@
 
 const REGEX_CHANNEL = /.*\/(user|channel|c)\/.+\/videos/u;
 const REGEX_USER = /.*\/@.*/u;
-const FULLY_WATCHED_THRESHOLD = 100;
 
 ((_undefined) => {
 	// Enable for debugging
@@ -36,7 +35,7 @@ const FULLY_WATCHED_THRESHOLD = 100;
 		});
 	}
 
-	const HIDDEN_THRESHOLD_PERCENT = 10;
+	const HIDDEN_THRESHOLD_PERCENT = 90;
 
 	const logDebug = (...msgs) => {
 		if (DEBUG) console.debug('[YT-HWV]', msgs);
@@ -56,89 +55,10 @@ const FULLY_WATCHED_THRESHOLD = 100;
 		return null;
 	};
 
-	// Get current section for immediate CSS application
-	const getCurrentSection = () => {
-		const { href } = window.location;
-		if (href.includes('/watch?')) return 'watch';
-		if (href.match(REGEX_CHANNEL) || href.match(REGEX_USER)) return 'channel';
-		if (href.includes('/feed/subscriptions')) return 'subscriptions';
-		if (href.includes('/feed/trending')) return 'trending';
-		if (href.includes('/playlist?')) return 'playlist';
-		if (href.includes('/results?')) return 'search';
-		return 'misc';
-	};
-
-	// Apply immediate hiding CSS based on localStorage state
-	const applyImmediateHidingCSS = () => {
-		const section = getCurrentSection();
-		const state = localStorage.getItem(`YTHWV_STATE_${section}`);
-
-		// Remove any existing immediate-hide style
-		const existingStyle = document.getElementById('YT-HWV-IMMEDIATE-HIDE');
-		if (existingStyle) existingStyle.remove();
-
-		if (!state || state === 'normal' || window.location.href.includes('/feed/history')) {
-			return;
-		}
-
-		// CSS selectors for progress bars that indicate watched videos
-		const progressBarSelectors = [
-			'.ytd-thumbnail-overlay-resume-playback-renderer',
-			'.ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment',
-			'.ytThumbnailOverlayProgressBarHostWatchedProgressBarSegmentModern',
-		].join(',');
-
-		// Container selectors based on section
-		let containerSelectors;
-		if (section === 'subscriptions') {
-			containerSelectors = [
-				'ytd-rich-item-renderer',
-				'ytd-grid-video-renderer',
-				'ytd-video-renderer',
-			];
-		} else if (section === 'playlist') {
-			containerSelectors = ['ytd-playlist-video-renderer'];
-		} else if (section === 'watch') {
-			containerSelectors = ['ytd-compact-video-renderer', 'yt-lockup-view-model'];
-		} else {
-			containerSelectors = [
-				'ytd-rich-item-renderer',
-				'ytd-video-renderer',
-				'ytd-grid-video-renderer',
-			];
-		}
-
-		let css = '';
-
-		if (state === 'hidden' || state === 'fullyWatched') {
-			// Hide containers that have a progress bar
-			containerSelectors.forEach(container => {
-				css += `${container}:has(${progressBarSelectors}) { display: none !important; }\n`;
-			});
-		} else if (state === 'dimmed') {
-			// Dim containers that have a progress bar
-			containerSelectors.forEach(container => {
-				css += `${container}:has(${progressBarSelectors}) { opacity: 0.3; }\n`;
-			});
-		}
-
-		if (css) {
-			const style = document.createElement('style');
-			style.id = 'YT-HWV-IMMEDIATE-HIDE';
-			style.textContent = css;
-			document.head.appendChild(style);
-		}
-	};
-
-	// Apply immediately
-	applyImmediateHidingCSS();
-
 	addStyle(`
 .YT-HWV-WATCHED-HIDDEN { display: none !important }
 
 .YT-HWV-WATCHED-DIMMED { opacity: 0.3 }
-
-.YT-HWV-FULLY-WATCHED-HIDDEN { display: none !important }
 
 .YT-HWV-HIDDEN-ROW-PARENT { padding-bottom: 10px }
 
@@ -246,8 +166,6 @@ ytd-masthead #container.ytd-masthead {
 			'<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="currentColor" opacity="0.5" d="M24 9C14 9 5.46 15.22 2 24c3.46 8.78 12 15 22 15 10.01 0 18.54-6.22 22-15-3.46-8.78-11.99-15-22-15zm0 25c-5.52 0-10-4.48-10-10s4.48-10 10-10 10 4.48 10 10-4.48 10-10 10zm0-16c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"/></svg>',
 		iconHidden:
 			'<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="currentColor" d="M24 14c5.52 0 10 4.48 10 10 0 1.29-.26 2.52-.71 3.65l5.85 5.85c3.02-2.52 5.4-5.78 6.87-9.5-3.47-8.78-12-15-22.01-15-2.8 0-5.48.5-7.97 1.4l4.32 4.31c1.13-.44 2.36-.71 3.65-.71zM4 8.55l4.56 4.56.91.91C6.17 16.6 3.56 20.03 2 24c3.46 8.78 12 15 22 15 3.1 0 6.06-.6 8.77-1.69l.85.85L39.45 44 42 41.46 6.55 6 4 8.55zM15.06 19.6l3.09 3.09c-.09.43-.15.86-.15 1.31 0 3.31 2.69 6 6 6 .45 0 .88-.06 1.3-.15l3.09 3.09C27.06 33.6 25.58 34 24 34c-5.52 0-10-4.48-10-10 0-1.58.4-3.06 1.06-4.4zm8.61-1.57 6.3 6.3L30 24c0-3.31-2.69-6-6-6l-.33.03z"/></svg>',
-		iconFullyWatched:
-			'<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">100</text><line x1="2" y1="20" x2="22" y2="4" stroke="currentColor" stroke-width="2"/></svg>',
 		name: 'Toggle Watched Videos',
 		stateKey: 'YTHWV_STATE',
 	};
@@ -294,27 +212,6 @@ ytd-masthead #container.ytd-masthead {
 		);
 
 		return withThreshold;
-	};
-
-	const findFullyWatchedElements = () => {
-		const watched = document.querySelectorAll(
-			[
-				'.ytd-thumbnail-overlay-resume-playback-renderer',
-				'.ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment',
-				'.ytThumbnailOverlayProgressBarHostWatchedProgressBarSegmentModern',
-			].join(','),
-		);
-
-		const fullyWatched = Array.from(watched).filter((bar) => {
-			return (
-				bar.style.width &&
-				Number.parseInt(bar.style.width, 10) >= FULLY_WATCHED_THRESHOLD
-			);
-		});
-
-		logDebug(`Found ${fullyWatched.length} fully watched elements (>=${FULLY_WATCHED_THRESHOLD}%)`);
-
-		return fullyWatched;
 	};
 
 	// ===========================================================
@@ -385,26 +282,12 @@ ytd-masthead #container.ytd-masthead {
 		document
 			.querySelectorAll('.YT-HWV-WATCHED-HIDDEN')
 			.forEach((el) => el.classList.remove('YT-HWV-WATCHED-HIDDEN'));
-		document
-			.querySelectorAll('.YT-HWV-FULLY-WATCHED-HIDDEN')
-			.forEach((el) => el.classList.remove('YT-HWV-FULLY-WATCHED-HIDDEN'));
 
 		// If we're on the History page -- do nothing. We don't want to hide watched videos here.
 		if (window.location.href.indexOf('/feed/history') >= 0) return;
 
 		const section = determineYoutubeSection();
 		const state = localStorage[`YTHWV_STATE_${section}`];
-
-		// Mode: fullyWatched - only hide videos that are >= 95% watched
-		if (state === 'fullyWatched') {
-			findFullyWatchedElements().forEach((item) => {
-				const watchedItem = getWatchedItemContainer(item, section);
-				if (watchedItem) {
-					watchedItem.classList.add('YT-HWV-FULLY-WATCHED-HIDDEN');
-				}
-			});
-			return;
-		}
 
 		findWatchedElements().forEach((item, _i) => {
 			let watchedItem = getWatchedItemContainer(item, section);
@@ -455,7 +338,7 @@ ytd-masthead #container.ytd-masthead {
 		buttonArea.classList.add('YT-HWV-BUTTONS');
 
 		// Render button
-		const { icon, iconDimmed, iconHidden, iconFullyWatched, name, stateKey } = BUTTON;
+		const { icon, iconDimmed, iconHidden, name, stateKey } = BUTTON;
 		const section = determineYoutubeSection();
 		const storageKey = [stateKey, section].join('_');
 		const toggleButtonState = localStorage.getItem(storageKey) || 'normal';
@@ -470,26 +353,22 @@ ytd-masthead #container.ytd-masthead {
 		let buttonIcon = icon;
 		if (toggleButtonState === 'dimmed') buttonIcon = iconDimmed;
 		else if (toggleButtonState === 'hidden') buttonIcon = iconHidden;
-		else if (toggleButtonState === 'fullyWatched') buttonIcon = iconFullyWatched;
 		button.innerHTML = buttonIcon;
 		buttonArea.appendChild(button);
 
 		button.addEventListener('click', () => {
 			logDebug(`Button ${name} clicked. State: ${toggleButtonState}`);
 
-			// Cycle: normal -> dimmed -> hidden -> fullyWatched -> normal
+			// Cycle: normal -> dimmed -> hidden -> normal
 			let newState = 'dimmed';
 			if (toggleButtonState === 'dimmed') {
 				newState = 'hidden';
 			} else if (toggleButtonState === 'hidden') {
-				newState = 'fullyWatched';
-			} else if (toggleButtonState === 'fullyWatched') {
 				newState = 'normal';
 			}
 
 			localStorage.setItem(storageKey, newState);
 
-			applyImmediateHidingCSS();
 			updateClassOnWatchedItems();
 			renderButtons();
 		});
