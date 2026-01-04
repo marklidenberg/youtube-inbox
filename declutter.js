@@ -79,7 +79,11 @@
 .DECLUTTER-HIDE-DIVIDERS ytd-watch-metadata { border: none !important; }
 .DECLUTTER-HIDE-DIVIDERS #below { border: none !important; }
 .DECLUTTER-HIDE-DIVIDERS ytd-merch-shelf-renderer { border: none !important; }
-.DECLUTTER-HIDE-DIVIDERS ytd-playlist-panel-renderer { border: none !important; }`;
+.DECLUTTER-HIDE-DIVIDERS ytd-playlist-panel-renderer { border: none !important; }
+.DECLUTTER-HIDE-DIVIDERS #tabs-divider { display: none !important; }
+.DECLUTTER-HIDE-DIVIDERS ytd-tabbed-page-header #tabs-inner-container { border: none !important; }
+.DECLUTTER-HIDE-DIVIDERS tp-yt-app-header { border: none !important; }
+.DECLUTTER-HIDE-DIVIDERS tp-yt-app-toolbar { border: none !important; }`;
 	document.head.appendChild(style);
 
 	const applySettings = () => {
