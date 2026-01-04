@@ -53,18 +53,8 @@
 .YT-HRV-RATED-DIMMED { opacity: 0.3; }
 
 .YT-HRV-LOADING {
-	position: relative;
-}
-
-.YT-HRV-LOADING::before {
-	content: '⌛';
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	font-size: 48px;
-	z-index: 100;
-	pointer-events: none;
+	opacity: 0.3;
+	filter: grayscale(100%) brightness(2);
 }
 
 .YT-HRV-BUTTONS {
@@ -196,7 +186,7 @@
 
 		// Check videos individually (YouTube doesn't have a batch API for this)
 		// To avoid rate limiting, check in smaller batches with delays
-		const BATCH_SIZE = 3;
+		const BATCH_SIZE = 5;
 		const DELAY_MS = 500;
 
 		for (let i = 0; i < uncachedIds.length; i += BATCH_SIZE) {
