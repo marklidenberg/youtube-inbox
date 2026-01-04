@@ -15,7 +15,7 @@
 		trustedTypes.createPolicy('default', { createHTML: (s) => s, createScript: (s) => s, createScriptURL: (s) => s });
 	}
 
-	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', TAGS: 'DECLUTTER_HIDE_TAGS', SIDEBAR: 'DECLUTTER_HIDE_SIDEBAR', COMMENTS: 'DECLUTTER_HIDE_COMMENTS', RECOMMENDATIONS: 'DECLUTTER_HIDE_RECOMMENDATIONS', DESCRIPTION_JUNK: 'DECLUTTER_HIDE_DESCRIPTION_JUNK' };
+	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', TAGS: 'DECLUTTER_HIDE_TAGS', SIDEBAR: 'DECLUTTER_HIDE_SIDEBAR', COMMENTS: 'DECLUTTER_HIDE_COMMENTS', RECOMMENDATIONS: 'DECLUTTER_HIDE_RECOMMENDATIONS', DESCRIPTION_JUNK: 'DECLUTTER_HIDE_DESCRIPTION_JUNK', SHORTS: 'DECLUTTER_HIDE_SHORTS' };
 	const INIT_KEY = 'DECLUTTER_INITIALIZED';
 	if (!localStorage.getItem(INIT_KEY)) {
 		Object.values(KEYS).forEach((k) => localStorage.setItem(k, 'true'));
@@ -48,7 +48,6 @@
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Report history"]) { display: none !important; }
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Help"]) { display: none !important; }
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Send feedback"]) { display: none !important; }
-.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Shorts"]) { display: none !important; }
 .DECLUTTER-HIDE-COMMENTS ytd-comments#comments { display: none !important; }
 .DECLUTTER-HIDE-RECOMMENDATIONS ytd-watch-next-secondary-results-renderer { display: none !important; }
 .DECLUTTER-HIDE-RECOMMENDATIONS ytd-rich-grid-renderer { display: none !important; }
@@ -60,7 +59,13 @@
 .DECLUTTER-HIDE-DESCRIPTION-JUNK #description-inner ytd-video-description-transcript-section-renderer { display: none !important; }
 .DECLUTTER-HIDE-DESCRIPTION-JUNK #description-inner ytd-horizontal-card-list-renderer { display: none !important; }
 .DECLUTTER-HIDE-DESCRIPTION-JUNK #description-inner ytd-video-description-infocards-section-renderer { display: none !important; }
-.DECLUTTER-HIDE-DESCRIPTION-JUNK #description-inner ytd-video-description-music-section-renderer { display: none !important; }`;
+.DECLUTTER-HIDE-DESCRIPTION-JUNK #description-inner ytd-video-description-music-section-renderer { display: none !important; }
+.DECLUTTER-HIDE-SHORTS ytd-rich-section-renderer:has(ytd-rich-shelf-renderer[is-shorts]) { display: none !important; }
+.DECLUTTER-HIDE-SHORTS ytd-reel-shelf-renderer { display: none !important; }
+.DECLUTTER-HIDE-SHORTS ytd-shorts { display: none !important; }
+.DECLUTTER-HIDE-SHORTS a[title="Shorts"] { display: none !important; }
+.DECLUTTER-HIDE-SHORTS ytd-mini-guide-entry-renderer:has(a[title="Shorts"]) { display: none !important; }
+.DECLUTTER-HIDE-SHORTS ytd-guide-entry-renderer:has(a[title="Shorts"]) { display: none !important; }`;
 	document.head.appendChild(style);
 
 	const applySettings = () => {
@@ -73,6 +78,7 @@
 		document.body.classList.toggle('DECLUTTER-HIDE-COMMENTS', get(KEYS.COMMENTS));
 		document.body.classList.toggle('DECLUTTER-HIDE-RECOMMENDATIONS', get(KEYS.RECOMMENDATIONS));
 		document.body.classList.toggle('DECLUTTER-HIDE-DESCRIPTION-JUNK', get(KEYS.DESCRIPTION_JUNK));
+		document.body.classList.toggle('DECLUTTER-HIDE-SHORTS', get(KEYS.SHORTS));
 	};
 	applySettings();
 
@@ -94,6 +100,7 @@
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcComments"${get(KEYS.COMMENTS) ? ' checked' : ''}>Hide Comments</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcRecommendations"${get(KEYS.RECOMMENDATIONS) ? ' checked' : ''}>Hide Recommendations</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcDescriptionJunk"${get(KEYS.DESCRIPTION_JUNK) ? ' checked' : ''}>Hide Description Junk</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcShorts"${get(KEYS.SHORTS) ? ' checked' : ''}>Hide Shorts</label>
 </div>`;
 
 		const menu = wrap.querySelector('.DECLUTTER-MENU');
@@ -113,6 +120,7 @@
 		wrap.querySelector('#dcComments').onchange = (e) => { set(KEYS.COMMENTS, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcRecommendations').onchange = (e) => { set(KEYS.RECOMMENDATIONS, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcDescriptionJunk').onchange = (e) => { set(KEYS.DESCRIPTION_JUNK, e.target.checked); applySettings(); };
+		wrap.querySelector('#dcShorts').onchange = (e) => { set(KEYS.SHORTS, e.target.checked); applySettings(); };
 		document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) menu.classList.remove('open'); });
 
 		target.parentNode.insertBefore(wrap, target);
