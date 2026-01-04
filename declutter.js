@@ -104,7 +104,14 @@
 .DECLUTTER-HIDE-DIVIDERS tp-yt-app-toolbar { border: none !important; }
 .DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail[is-preview-loading] video, .DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail[is-preview-loaded] video { display: none !important; }
 .DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail #mouseover-overlay { display: none !important; }
-.DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail[is-preview-loading] img, .DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail[is-preview-loaded] img { opacity: 1 !important; }`;
+.DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail[is-preview-loading] img, .DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail[is-preview-loaded] img { opacity: 1 !important; }
+.DECLUTTER-DISABLE-HOVER-PLAY #video-preview { display: none !important; }
+.DECLUTTER-DISABLE-HOVER-PLAY ytd-video-preview { display: none !important; }
+.DECLUTTER-DISABLE-HOVER-PLAY #preview { display: none !important; }
+.DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail[is-preview-loaded] { pointer-events: auto !important; }
+.DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail video { display: none !important; }
+.DECLUTTER-DISABLE-HOVER-PLAY ytd-rich-grid-media #mouseover-overlay { display: none !important; }
+.DECLUTTER-DISABLE-HOVER-PLAY ytd-rich-item-renderer #mouseover-overlay { display: none !important; }`;
 	document.head.appendChild(style);
 
 	const applySettings = () => {
