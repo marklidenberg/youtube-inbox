@@ -50,8 +50,8 @@
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Send feedback"]) { display: none !important; }
 .DECLUTTER-HIDE-COMMENTS ytd-comments#comments { display: none !important; }
 .DECLUTTER-HIDE-RECOMMENDATIONS ytd-watch-next-secondary-results-renderer { display: none !important; }
-.DECLUTTER-HIDE-RECOMMENDATIONS ytd-rich-grid-renderer { display: none !important; }
-.DECLUTTER-HIDE-RECOMMENDATIONS ytd-shelf-renderer { display: none !important; }
+.DECLUTTER-HIDE-RECOMMENDATIONS ytd-browse[page-subtype="home"] ytd-rich-grid-renderer { display: none !important; }
+.DECLUTTER-HIDE-RECOMMENDATIONS ytd-browse[page-subtype="home"] ytd-shelf-renderer { display: none !important; }
 .DECLUTTER-HIDE-DESCRIPTION-JUNK #description-inner ytd-text-inline-expander a[href*="/hashtag/"] { display: none !important; }
 .DECLUTTER-HIDE-DESCRIPTION-JUNK #description-inner ytd-text-inline-expander .yt-core-attributed-string--highlight-text-decorator { display: none !important; }
 .DECLUTTER-HIDE-DESCRIPTION-JUNK #description-inner ytd-text-inline-expander span:has(> a[href*="/hashtag/"]) + span:not(:has(a)) { display: none !important; }
