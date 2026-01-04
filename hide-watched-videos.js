@@ -182,6 +182,17 @@ ytd-thumbnail:hover .YT-HWV-THUMB-ACTIONS,
 .YT-HWV-SEGMENTED-MODIFIED #segmented-dislike-button button,
 .YT-HWV-SEGMENTED-MODIFIED yt-button-shape button { border-radius: 0 !important; }
 .YT-HWV-SEGMENTED-MODIFIED dislike-button-view-model yt-button-shape button { border-radius: 0 !important; }
+
+/* Force search bar to always be centered */
+ytd-masthead #center {
+	position: absolute !important;
+	left: 50% !important;
+	transform: translateX(-50%) !important;
+	max-width: 732px !important;
+}
+ytd-masthead #container.ytd-masthead {
+	position: relative !important;
+}
 `);
 
 	const BUTTON = {
@@ -712,6 +723,19 @@ ytd-thumbnail:hover .YT-HWV-THUMB-ACTIONS,
 	observeDOM(document.body, run);
 
 	setupLikeDislikeListener();
+
+	// Aggressively try to render buttons ASAP
+	const earlyButtonInjection = setInterval(() => {
+		const target = findButtonAreaTarget();
+		if (target) {
+			renderButtons();
+			clearInterval(earlyButtonInjection);
+			logDebug('Early button injection successful');
+		}
+	}, 100);
+
+	// Clear interval after 10 seconds to avoid running forever
+	setTimeout(() => clearInterval(earlyButtonInjection), 10000);
 
 	run();
 })();
