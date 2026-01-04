@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         YouTube - Pixelate + Grayscale thumbnails (Videos + Shorts)
+// @name         youtube-inbox: pixelate
 // @namespace    local
 // @version      1.3
 // @description  Makes YouTube video + Shorts thumbnails grayscale and very pixelated (handles dynamic loading)
