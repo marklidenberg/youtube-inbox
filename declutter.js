@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Declutter
+// @name         youtube-inbox: declutter
 // @namespace    https://example.com/
 // @version      1.0
 // @license      MIT
