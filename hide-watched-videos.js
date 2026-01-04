@@ -1,9 +1,8 @@
 // ==UserScript==
-// @name         YouTube: Hide Watched Videos
+// @name         youtube-inbox: hide watched videos
 // @namespace    http://github.com/marklidenberg/youtube-inbox
 // @version      1.0
 // @license      MIT
-// @description  Hides watched videos from your YouTube subscriptions page.
 // @author       Mark Lidenberg
 // @match        http://*.youtube.com/*
 // @match        http://youtube.com/*
@@ -36,10 +35,6 @@ const REGEX_USER = /.*\/@.*/u;
 	}
 
 	const HIDDEN_THRESHOLD_PERCENT = 90;
-
-	const logDebug = (...msgs) => {
-		if (DEBUG) console.debug('[YT-HWV]', msgs);
-	};
 
 	// GreaseMonkey no longer supports GM_addStyle. So we have to define
 	// our own polyfill here
@@ -206,11 +201,6 @@ ytd-masthead #container.ytd-masthead {
 			);
 		});
 
-		logDebug(
-			`Found ${watched.length} watched elements ` +
-				`(${withThreshold.length} within threshold)`,
-		);
-
 		return withThreshold;
 	};
 
@@ -357,7 +347,6 @@ ytd-masthead #container.ytd-masthead {
 		buttonArea.appendChild(button);
 
 		button.addEventListener('click', () => {
-			logDebug(`Button ${name} clicked. State: ${toggleButtonState}`);
 
 			// Cycle: normal -> dimmed -> hidden -> normal
 			let newState = 'dimmed';
@@ -376,10 +365,8 @@ ytd-masthead #container.ytd-masthead {
 		// Insert buttons into DOM
 		if (existingButtons) {
 			target.parentNode.replaceChild(buttonArea, existingButtons);
-			logDebug('Re-rendered menu buttons');
 		} else {
 			target.parentNode.insertBefore(buttonArea, target);
-			logDebug('Rendered menu buttons');
 		}
 	};
 
@@ -409,7 +396,6 @@ ytd-masthead #container.ytd-masthead {
 		// Add class to modify dislike button border radius
 		segmentedContainer.classList.add('YT-HWV-SEGMENTED-MODIFIED');
 		segmentedContainer.appendChild(watchedBtn);
-		logDebug('Added video page watched button');
 	};
 
 	// ===========================================================
@@ -424,7 +410,6 @@ ytd-masthead #container.ytd-masthead {
 			return;
 		}
 
-		logDebug('Running check for watched videos');
 		updateClassOnWatchedItems();
 		renderButtons();
 		addVideoPageWatchedButton();
@@ -460,7 +445,6 @@ ytd-masthead #container.ytd-masthead {
 		const eventListenerSupported = window.addEventListener;
 
 		return (obj, callback) => {
-			logDebug('Attaching DOM listener');
 
 			// Invalid `obj` given
 			if (!obj) return;
@@ -501,7 +485,6 @@ ytd-masthead #container.ytd-masthead {
 		const video = document.querySelector('video');
 		if (video && video.duration) {
 			video.currentTime = video.duration - 0.1;
-			logDebug('Jumped to end of video after like/dislike');
 		}
 	};
 
@@ -525,8 +508,6 @@ ytd-masthead #container.ytd-masthead {
 
 	// ===========================================================
 
-	logDebug('Starting Script');
-
 	// YouTube does navigation via history and also does a bunch
 	// of AJAX video loading. In order to ensure we're always up
 	// to date, we have to listen for ANY DOM change event, and
@@ -541,7 +522,6 @@ ytd-masthead #container.ytd-masthead {
 		if (target) {
 			renderButtons();
 			clearInterval(earlyButtonInjection);
-			logDebug('Early button injection successful');
 		}
 	}, 100);
 
