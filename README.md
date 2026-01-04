@@ -1,2 +1,7 @@
 # youtube-inbox
-A cleaner YouTube for focused watching: hide clutter, pixelate thumbnails, and hide watched videos.
+
+A cleaner YouTube experience for focused watching: hide distractions and already-watched videos.
+
+## Issues
+
+- YouTube doesn't mark videos as watched even when scrolled to the end. No method found to mark videos as watched directly from the thumbnail view, which significantly limits usability. 
