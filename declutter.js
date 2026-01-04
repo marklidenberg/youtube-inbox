@@ -66,7 +66,9 @@
 .DECLUTTER-HIDE-SHORTS ytd-mini-guide-entry-renderer:has(a[title="Shorts"]) { display: none !important; }
 .DECLUTTER-HIDE-SHORTS ytd-guide-entry-renderer:has(a[title="Shorts"]) { display: none !important; }
 .DECLUTTER-HIDE-CHANNEL-JUNK ytd-tabbed-page-header #page-header-container { display: none !important; }
-.DECLUTTER-HIDE-CHANNEL-JUNK ytd-c4-tabbed-header-renderer { display: none !important; }`;
+.DECLUTTER-HIDE-CHANNEL-JUNK ytd-c4-tabbed-header-renderer { display: none !important; }
+.DECLUTTER-HIDE-CHANNEL-JUNK yt-tab-shape:not([tab-title="Home"]):not([tab-title="Videos"]):not([tab-title="Playlists"]) { display: none !important; }
+.DECLUTTER-HIDE-CHANNEL-JUNK tp-yt-paper-tab:not([aria-label="Home"]):not([aria-label="Videos"]):not([aria-label="Playlists"]) { display: none !important; }`;
 	document.head.appendChild(style);
 
 	const applySettings = () => {
