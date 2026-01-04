@@ -10,7 +10,7 @@ A cleaner YouTube experience for focused watching.
 
 ## How to install
 
-Use `UserScripts` or `Tampermonkey` extensions.
+Add scripts to `UserScripts` or `Tampermonkey` extensions.
 
 ## Declutter
 ### Before
