@@ -24,6 +24,19 @@
 	const get = (k) => localStorage.getItem(k) === 'true';
 	const set = (k, v) => localStorage.setItem(k, v);
 
+	// Redirect channel links to /videos - intercept clicks since YouTube resets hrefs
+	const isChannelHome = (path) => /^\/@[^/]+$/.test(path) || /^\/@[^/]+\/featured$/.test(path);
+	document.addEventListener('click', (e) => {
+		const link = e.target.closest('a[href*="/@"]');
+		if (!link) return;
+		const path = new URL(link.href).pathname;
+		if (isChannelHome(path)) {
+			e.preventDefault();
+			e.stopPropagation();
+			window.location.href = path.replace(/\/featured$/, '') + '/videos';
+		}
+	}, true);
+
 	const style = document.createElement('style');
 	style.textContent = `
 .DECLUTTER-BTN { background: transparent; border: 1px solid var(--ytd-searchbox-legacy-border-color); border-radius: 40px; margin: 0 20px; padding: 0 16px; height: 40px; color: var(--yt-spec-text-primary); cursor: pointer; font-size: 14px; display: flex; align-items: center; }
