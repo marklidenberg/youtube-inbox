@@ -15,7 +15,7 @@
 		trustedTypes.createPolicy('default', { createHTML: (s) => s, createScript: (s) => s, createScriptURL: (s) => s });
 	}
 
-	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', TAGS: 'DECLUTTER_HIDE_TAGS', SIDEBAR: 'DECLUTTER_HIDE_SIDEBAR', COMMENTS: 'DECLUTTER_HIDE_COMMENTS', RECOMMENDATIONS: 'DECLUTTER_HIDE_RECOMMENDATIONS', DESCRIPTION_JUNK: 'DECLUTTER_HIDE_DESCRIPTION_JUNK', SHORTS: 'DECLUTTER_HIDE_SHORTS', CHANNEL_JUNK: 'DECLUTTER_HIDE_CHANNEL_JUNK' };
+	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', SIDEBAR: 'DECLUTTER_HIDE_SIDEBAR', COMMENTS: 'DECLUTTER_HIDE_COMMENTS', RECOMMENDATIONS: 'DECLUTTER_HIDE_RECOMMENDATIONS', DESCRIPTION_JUNK: 'DECLUTTER_HIDE_DESCRIPTION_JUNK', SHORTS: 'DECLUTTER_HIDE_SHORTS', CHANNEL_JUNK: 'DECLUTTER_HIDE_CHANNEL_JUNK' };
 	const INIT_KEY = 'DECLUTTER_INITIALIZED';
 	if (!localStorage.getItem(INIT_KEY)) {
 		Object.values(KEYS).forEach((k) => localStorage.setItem(k, 'true'));
@@ -39,7 +39,6 @@
 .DECLUTTER-HIDE-CREATE button[aria-label="Create"] { display: none !important; }
 .DECLUTTER-HIDE-NOTIFICATIONS ytd-notification-topbar-button-renderer { display: none !important; }
 .DECLUTTER-HIDE-MICROPHONE #voice-search-button { display: none !important; }
-.DECLUTTER-HIDE-TAGS ytd-feed-filter-chip-bar-renderer { display: none !important; }
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer #sections > ytd-guide-section-renderer:has(h3:not([hidden])) { display: none !important; }
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer #sections > ytd-guide-collapsible-entry-renderer { display: none !important; }
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer #footer { display: none !important; }
@@ -77,7 +76,6 @@
 		document.body.classList.toggle('DECLUTTER-HIDE-CREATE', get(KEYS.CREATE));
 		document.body.classList.toggle('DECLUTTER-HIDE-NOTIFICATIONS', get(KEYS.NOTIFICATIONS));
 		document.body.classList.toggle('DECLUTTER-HIDE-MICROPHONE', get(KEYS.MICROPHONE));
-		document.body.classList.toggle('DECLUTTER-HIDE-TAGS', get(KEYS.TAGS));
 		document.body.classList.toggle('DECLUTTER-HIDE-SIDEBAR', get(KEYS.SIDEBAR));
 		document.body.classList.toggle('DECLUTTER-HIDE-COMMENTS', get(KEYS.COMMENTS));
 		document.body.classList.toggle('DECLUTTER-HIDE-RECOMMENDATIONS', get(KEYS.RECOMMENDATIONS));
@@ -100,7 +98,6 @@
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcCreate"${get(KEYS.CREATE) ? ' checked' : ''}>Hide +Create button</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcNotifications"${get(KEYS.NOTIFICATIONS) ? ' checked' : ''}>Hide Notifications button</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcMicrophone"${get(KEYS.MICROPHONE) ? ' checked' : ''}>Hide Microphone</label>
-<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcTags"${get(KEYS.TAGS) ? ' checked' : ''}>Hide Tags</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcSidebar"${get(KEYS.SIDEBAR) ? ' checked' : ''}>Hide Sidebar Junk</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcComments"${get(KEYS.COMMENTS) ? ' checked' : ''}>Hide Comments</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcRecommendations"${get(KEYS.RECOMMENDATIONS) ? ' checked' : ''}>Hide Recommendations</label>
@@ -121,7 +118,6 @@
 		wrap.querySelector('#dcCreate').onchange = (e) => { set(KEYS.CREATE, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcNotifications').onchange = (e) => { set(KEYS.NOTIFICATIONS, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcMicrophone').onchange = (e) => { set(KEYS.MICROPHONE, e.target.checked); applySettings(); };
-		wrap.querySelector('#dcTags').onchange = (e) => { set(KEYS.TAGS, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcSidebar').onchange = (e) => { set(KEYS.SIDEBAR, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcComments').onchange = (e) => { set(KEYS.COMMENTS, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcRecommendations').onchange = (e) => { set(KEYS.RECOMMENDATIONS, e.target.checked); applySettings(); };
@@ -136,20 +132,4 @@
 	new MutationObserver(render).observe(document.body, { childList: true, subtree: true });
 	render();
 
-	// Redirect channel Home/Shorts/Posts to Videos when channel junk is hidden
-	const redirectToVideos = () => {
-		if (!get(KEYS.CHANNEL_JUNK)) return;
-		const path = window.location.pathname;
-		const channelMatch = path.match(/^\/@[^\/]+$/) || path.match(/^\/channel\/[^\/]+$/) || path.match(/^\/c\/[^\/]+$/);
-		const isNonVideosTab = path.match(/\/(shorts|community|featured)$/);
-		if (channelMatch || isNonVideosTab) {
-			const basePath = path.replace(/\/(shorts|community|featured)$/, '');
-			const videosPath = basePath + '/videos';
-			if (path !== videosPath) {
-				window.location.replace(videosPath);
-			}
-		}
-	};
-	redirectToVideos();
-	window.addEventListener('yt-navigate-finish', redirectToVideos);
 })();
