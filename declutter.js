@@ -34,8 +34,18 @@
 .DECLUTTER-ITEM { display: flex; align-items: center; gap: 8px; padding: 8px 0; color: var(--yt-spec-text-primary); font-size: 14px; cursor: pointer; }
 .DECLUTTER-ITEM input { width: 18px; height: 18px; cursor: pointer; }
 .DECLUTTER-TOGGLE-ALL { width: 100%; padding: 8px 12px; margin-bottom: 8px; background: var(--yt-spec-badge-chip-background); border: none; border-radius: 4px; color: var(--yt-spec-text-primary); font-size: 14px; cursor: pointer; }
-.DECLUTTER-TOGGLE-ALL:hover { background: var(--yt-spec-10-percent-layer); }`;
+.DECLUTTER-TOGGLE-ALL:hover { background: var(--yt-spec-10-percent-layer); }
+.DECLUTTER-HIDE-LOGO ytd-topbar-logo-renderer { display: none !important; }
+.DECLUTTER-HIDE-CREATE button[aria-label="Create"] { display: none !important; }
+.DECLUTTER-HIDE-NOTIFICATIONS ytd-notification-topbar-button-renderer { display: none !important; }`;
 	document.head.appendChild(style);
+
+	const applySettings = () => {
+		document.body.classList.toggle('DECLUTTER-HIDE-LOGO', get(KEYS.LOGO));
+		document.body.classList.toggle('DECLUTTER-HIDE-CREATE', get(KEYS.CREATE));
+		document.body.classList.toggle('DECLUTTER-HIDE-NOTIFICATIONS', get(KEYS.NOTIFICATIONS));
+	};
+	applySettings();
 
 	const render = () => {
 		const target = document.querySelector('#container #end #buttons');
@@ -59,9 +69,9 @@
 			const allChecked = [...checkboxes].every((cb) => cb.checked);
 			checkboxes.forEach((cb) => { cb.checked = !allChecked; cb.dispatchEvent(new Event('change', { bubbles: true })); });
 		};
-		wrap.querySelector('#dcLogo').onchange = (e) => set(KEYS.LOGO, e.target.checked);
-		wrap.querySelector('#dcCreate').onchange = (e) => set(KEYS.CREATE, e.target.checked);
-		wrap.querySelector('#dcNotifications').onchange = (e) => set(KEYS.NOTIFICATIONS, e.target.checked);
+		wrap.querySelector('#dcLogo').onchange = (e) => { set(KEYS.LOGO, e.target.checked); applySettings(); };
+		wrap.querySelector('#dcCreate').onchange = (e) => { set(KEYS.CREATE, e.target.checked); applySettings(); };
+		wrap.querySelector('#dcNotifications').onchange = (e) => { set(KEYS.NOTIFICATIONS, e.target.checked); applySettings(); };
 		document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) menu.classList.remove('open'); });
 
 		target.parentNode.insertBefore(wrap, target);
