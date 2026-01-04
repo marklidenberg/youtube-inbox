@@ -26,15 +26,19 @@
       'ytm-shorts-lockup-view-model img',
       'yt-thumbnail-view-model img',
       '.ytThumbnailViewModelImage img',
-  
+
       // Classic thumbnails
       'ytd-thumbnail img',
       'a#thumbnail img',
-  
+
+      // Channel banners and avatars
+      'yt-image-banner-view-model img',
+      '.yt-spec-avatar-shape img',
+
       // Common YouTube image classes (your snippet uses ytCoreImageHost)
       'img.ytCoreImageHost',
       'img[class*="ytCoreImage"]',
-  
+
       // Fallback (most thumbnails)
       'img[src*="i.ytimg.com/vi/"]',
     ].join(', ');
@@ -61,8 +65,8 @@
     function looksLikeThumb(src) {
       if (!src) return false;
       if (ONLY_YTIMG && !src.includes('i.ytimg.com')) return false;
-      // Covers /vi/... plus the oar*.jpg style shorts thumbs
-      return /i\.ytimg\.com\/(vi|vi_|sb)\/|i\.ytimg\.com\/vi\/|\/oar\d*\.jpg/i.test(src);
+      // Covers /vi/... plus the oar*.jpg style shorts thumbs, and channel banners/avatars
+      return /i\.ytimg\.com\/(vi|vi_|sb)\/|i\.ytimg\.com\/vi\/|\/oar\d*\.jpg|yt3\.googleusercontent\.com\//i.test(src);
     }
   
     async function pixelateImgElement(img) {
