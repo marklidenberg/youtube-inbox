@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         youtube-inbox: hide rated videos
+// @name         youtube-inbox: hide watched or rated videos
 // @namespace    http://github.com/marklidenberg/youtube-inbox
-// @version      1.0
+// @version      1.1
 // @license      MIT
-// @description  Dim or hide videos that you've already rated (liked or disliked)
+// @description  Dim or hide videos that you've already watched or rated (liked or disliked)
 // @author       Mark Lidenberg
 // @match        http://*.youtube.com/*
 // @match        https://*.youtube.com/*
@@ -20,14 +20,15 @@
 		trustedTypes.createPolicy('default', { createHTML: (s) => s, createScript: (s) => s, createScriptURL: (s) => s });
 	}
 
-	const STORAGE_KEY = 'YT_HIDE_RATED_STATE';
-	const CACHE_KEY = 'YT_HIDE_RATED_CACHE';
+	const STORAGE_KEY = 'YT_HIDE_WATCHED_RATED_STATE';
+	const CACHE_KEY = 'YT_HIDE_WATCHED_RATED_CACHE';
+	const WATCHED_THRESHOLD_PERCENT = 90;
 
-	// States: 'normal' (show all), 'dimmed' (dim rated), 'hidden' (hide rated)
+	// States: 'normal' (show all), 'dimmed' (dim watched/rated), 'hidden' (hide watched/rated)
 	const getState = () => localStorage.getItem(STORAGE_KEY) || 'normal';
 	const setState = (state) => localStorage.setItem(STORAGE_KEY, state);
 
-	// Cache for rated videos (only stores videos that ARE rated)
+	// Cache for watched/rated videos (stores: 'watched', 'like', or 'dislike')
 	const getCache = () => {
 		try {
 			return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
@@ -36,12 +37,12 @@
 		}
 	};
 	const setCache = (cache) => localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
-	const getCachedRating = (videoId) => getCache()[videoId] || null;
-	const setCachedRating = (videoId, rating) => {
-		// Only cache if video IS rated (like or dislike)
-		if (rating) {
+	const getCachedStatus = (videoId) => getCache()[videoId] || null;
+	const setCachedStatus = (videoId, status) => {
+		// Only cache if video has a status (watched, like, or dislike)
+		if (status) {
 			const cache = getCache();
-			cache[videoId] = rating;
+			cache[videoId] = status;
 			setCache(cache);
 		}
 	};
@@ -154,6 +155,36 @@ ytd-thumbnail:hover .YT-HRV-THUMB-BUTTONS,
 `;
 	document.head.appendChild(style);
 
+	// Find all watched progress bar elements on the page (exact logic from hide-watched-videos.js)
+	const findWatchedProgressBars = () => {
+		const watched = document.querySelectorAll([
+			'.ytd-thumbnail-overlay-resume-playback-renderer',
+			'.ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment',
+			'.ytThumbnailOverlayProgressBarHostWatchedProgressBarSegmentModern',
+		].join(','));
+
+		const withThreshold = Array.from(watched).filter((bar) => {
+			return (
+				bar.style.width &&
+				Number.parseInt(bar.style.width, 10) >= WATCHED_THRESHOLD_PERCENT
+			);
+		});
+
+		return withThreshold;
+	};
+
+	// Get the video container element from a progress bar element
+	const getVideoContainerFromProgressBar = (progressBar) => {
+		return (
+			progressBar.closest('ytd-rich-item-renderer') ||
+			progressBar.closest('ytd-video-renderer') ||
+			progressBar.closest('ytd-grid-video-renderer') ||
+			progressBar.closest('ytd-compact-video-renderer') ||
+			progressBar.closest('ytd-playlist-video-renderer') ||
+			progressBar.closest('yt-lockup-view-model')
+		);
+	};
+
 	// Extract video ID from various YouTube elements
 	const extractVideoId = (element) => {
 		// Try href attribute
@@ -226,14 +257,14 @@ ytd-thumbnail:hover .YT-HRV-THUMB-BUTTONS,
 		return `SAPISIDHASH ${timestamp}_${hashHex}`;
 	};
 
-	// Batch check videos for rating status
+	// Batch check videos for rating status (like/dislike)
 	const checkVideosRatingBatch = async (videoIds, onVideoChecked) => {
 		const results = {};
 		const uncachedIds = [];
 
 		// First, check cache for already-rated videos
 		for (const videoId of videoIds) {
-			const cached = getCachedRating(videoId);
+			const cached = getCachedStatus(videoId);
 			if (cached) {
 				results[videoId] = cached;
 				onVideoChecked(videoId, cached);
@@ -259,7 +290,7 @@ ytd-thumbnail:hover .YT-HRV-THUMB-BUTTONS,
 				const rating = await checkSingleVideoRating(videoId);
 				results[videoId] = rating;
 				// Cache only rated videos (not unrated ones)
-				setCachedRating(videoId, rating);
+				setCachedStatus(videoId, rating);
 				// Apply state immediately
 				onVideoChecked(videoId, rating);
 			}));
@@ -397,14 +428,15 @@ ytd-thumbnail:hover .YT-HRV-THUMB-BUTTONS,
 		}
 	};
 
-	// Apply visual state to video elements
-	const applyState = (element, rating) => {
+	// Apply visual state to video elements based on status ('watched', 'like', 'dislike', or false)
+	const applyState = (element, status) => {
 		const state = getState();
 
 		// Remove all state classes first
 		element.classList.remove('YT-HRV-RATED-HIDDEN', 'YT-HRV-RATED-DIMMED', 'YT-HRV-LOADING');
 
-		if (!rating) return;
+		// If no status (not watched and not rated), don't apply any visual changes
+		if (!status) return;
 
 		if (state === 'hidden') {
 			element.classList.add('YT-HRV-RATED-HIDDEN');
@@ -465,7 +497,7 @@ ytd-thumbnail:hover .YT-HRV-THUMB-BUTTONS,
 
 	// Handle thumb button click
 	const handleThumbButtonClick = async (element, videoId, action, _clickedBtn, container) => {
-		const currentRating = ratingStatusMap.get(element) || false;
+		const currentRating = statusMap.get(element) || false;
 		const likeBtn = container.querySelector('.YT-HRV-THUMB-BTN:first-child');
 		const dislikeBtn = container.querySelector('.YT-HRV-THUMB-BTN:last-child');
 
@@ -503,7 +535,7 @@ ytd-thumbnail:hover .YT-HRV-THUMB-BUTTONS,
 		if (success) {
 			// Update cache
 			if (newRating) {
-				setCachedRating(videoId, newRating);
+				setCachedStatus(videoId, newRating);
 			} else {
 				// Remove from cache if unrated
 				const cache = getCache();
@@ -512,7 +544,7 @@ ytd-thumbnail:hover .YT-HRV-THUMB-BUTTONS,
 			}
 
 			// Update rating status map
-			ratingStatusMap.set(element, newRating);
+			statusMap.set(element, newRating);
 
 			// Update button states
 			likeBtn.classList.remove('YT-HRV-THUMB-BTN-LIKED');
@@ -546,64 +578,88 @@ ytd-thumbnail:hover .YT-HRV-THUMB-BUTTONS,
 		dislikeBtn.disabled = false;
 	};
 
-	// Store rating status on elements
-	const ratingStatusMap = new Map();
+	// Store video status on elements ('watched', 'like', 'dislike', or false)
+	const statusMap = new Map();
+
+	// Set of elements already marked as watched (to avoid re-processing)
+	const watchedElements = new Set();
+
+	// Process watched videos first (from progress bars - no API calls needed)
+	const processWatchedVideos = () => {
+		const progressBars = findWatchedProgressBars();
+
+		for (const bar of progressBars) {
+			const container = getVideoContainerFromProgressBar(bar);
+			if (container && !watchedElements.has(container)) {
+				watchedElements.add(container);
+				statusMap.set(container, 'watched');
+				applyState(container, 'watched');
+				// Mark as processed so we don't re-process it
+				container.classList.add('YT-HRV-PROCESSED');
+			}
+		}
+	};
 
 	// Process all videos on the page
 	const processVideos = async () => {
+		// First, process watched videos (instant, no API)
+		processWatchedVideos();
+
+		// Then find unprocessed videos to check rating
 		const videos = findVideoElements();
 		if (videos.length === 0) return;
 
-		const videoIds = videos.map(v => v.videoId);
+		// Filter out already-watched videos
+		const videosToCheck = videos.filter(({ element }) => !watchedElements.has(element));
+
+		if (videosToCheck.length === 0) return;
 
 		// Build a map from videoId to element for quick lookup
 		const videoIdToElement = new Map();
-		const videoIdMap = new Map(); // To store videoId for each element
-		videos.forEach(({ element, videoId }) => {
+		videosToCheck.forEach(({ element, videoId }) => {
 			videoIdToElement.set(videoId, element);
-			videoIdMap.set(element, videoId);
 		});
 
 		// Mark as processed and show loading indicator
-		videos.forEach(({ element }) => {
+		videosToCheck.forEach(({ element }) => {
 			element.classList.add('YT-HRV-PROCESSED');
 			element.classList.add('YT-HRV-LOADING');
 		});
 
-		// Check rating status with callback to apply state immediately
+		// Check rating status for non-watched videos
+		const videoIds = videosToCheck.map(v => v.videoId);
 		await checkVideosRatingBatch(videoIds, (videoId, rating) => {
 			const element = videoIdToElement.get(videoId);
 			if (element) {
-				ratingStatusMap.set(element, rating);
+				statusMap.set(element, rating);
 				applyState(element, rating);
-				// Create thumbnail buttons
 				createThumbButtons(element, videoId, rating);
 			}
 		});
 
 		// Also add buttons to videos that weren't rated (rating = false)
-		videos.forEach(({ element, videoId }) => {
-			if (!ratingStatusMap.has(element)) {
-				ratingStatusMap.set(element, false);
+		videosToCheck.forEach(({ element, videoId }) => {
+			if (!statusMap.has(element)) {
+				statusMap.set(element, false);
 			}
-			createThumbButtons(element, videoId, ratingStatusMap.get(element));
+			createThumbButtons(element, videoId, statusMap.get(element));
 		});
 	};
 
 	// Re-apply state to all processed elements (when state changes)
 	const reapplyAllStates = () => {
-		ratingStatusMap.forEach((rating, element) => {
-			applyState(element, rating);
+		statusMap.forEach((status, element) => {
+			applyState(element, status);
 		});
 	};
 
-	// Icons (same as hide-watched-videos.js - eye icons)
+	// Icons (eye icons for toggle button)
 	const ICONS = {
-		// Normal - show all rated videos (eye icon)
+		// Normal - show all videos (eye icon)
 		normal: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="currentColor" d="M24 9C14 9 5.46 15.22 2 24c3.46 8.78 12 15 22 15 10.01 0 18.54-6.22 22-15-3.46-8.78-11.99-15-22-15zm0 25c-5.52 0-10-4.48-10-10s4.48-10 10-10 10 4.48 10 10-4.48 10-10 10zm0-16c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"/></svg>',
-		// Dimmed - dim rated videos (eye with opacity)
+		// Dimmed - dim watched/rated videos (eye with opacity)
 		dimmed: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="currentColor" opacity="0.5" d="M24 9C14 9 5.46 15.22 2 24c3.46 8.78 12 15 22 15 10.01 0 18.54-6.22 22-15-3.46-8.78-11.99-15-22-15zm0 25c-5.52 0-10-4.48-10-10s4.48-10 10-10 10 4.48 10 10-4.48 10-10 10zm0-16c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"/></svg>',
-		// Hidden - hide rated videos (eye with slash)
+		// Hidden - hide watched/rated videos (eye with slash)
 		hidden: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="currentColor" d="M24 14c5.52 0 10 4.48 10 10 0 1.29-.26 2.52-.71 3.65l5.85 5.85c3.02-2.52 5.4-5.78 6.87-9.5-3.47-8.78-12-15-22.01-15-2.8 0-5.48.5-7.97 1.4l4.32 4.31c1.13-.44 2.36-.71 3.65-.71zM4 8.55l4.56 4.56.91.91C6.17 16.6 3.56 20.03 2 24c3.46 8.78 12 15 22 15 3.1 0 6.06-.6 8.77-1.69l.85.85L39.45 44 42 41.46 6.55 6 4 8.55zM15.06 19.6l3.09 3.09c-.09.43-.15.86-.15 1.31 0 3.31 2.69 6 6 6 .45 0 .88-.06 1.3-.15l3.09 3.09C27.06 33.6 25.58 34 24 34c-5.52 0-10-4.48-10-10 0-1.58.4-3.06 1.06-4.4zm8.61-1.57 6.3 6.3L30 24c0-3.31-2.69-6-6-6l-.33.03z"/></svg>',
 	};
 
@@ -633,7 +689,7 @@ ytd-thumbnail:hover .YT-HRV-THUMB-BUTTONS,
 		if (state !== 'normal') button.classList.add('YT-HRV-BUTTON-DISABLED');
 
 		button.innerHTML = ICONS[state] || ICONS.normal;
-		button.title = `Toggle rated videos: currently "${state}"`;
+		button.title = `Toggle watched/rated videos: currently "${state}"`;
 
 		button.addEventListener('click', () => {
 			// Cycle: normal -> dimmed -> hidden -> normal
