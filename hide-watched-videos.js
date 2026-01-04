@@ -56,6 +56,83 @@ const FULLY_WATCHED_THRESHOLD = 100;
 		return null;
 	};
 
+	// Get current section for immediate CSS application
+	const getCurrentSection = () => {
+		const { href } = window.location;
+		if (href.includes('/watch?')) return 'watch';
+		if (href.match(REGEX_CHANNEL) || href.match(REGEX_USER)) return 'channel';
+		if (href.includes('/feed/subscriptions')) return 'subscriptions';
+		if (href.includes('/feed/trending')) return 'trending';
+		if (href.includes('/playlist?')) return 'playlist';
+		if (href.includes('/results?')) return 'search';
+		return 'misc';
+	};
+
+	// Apply immediate hiding CSS based on localStorage state
+	const applyImmediateHidingCSS = () => {
+		const section = getCurrentSection();
+		const state = localStorage.getItem(`YTHWV_STATE_${section}`);
+
+		// Remove any existing immediate-hide style
+		const existingStyle = document.getElementById('YT-HWV-IMMEDIATE-HIDE');
+		if (existingStyle) existingStyle.remove();
+
+		if (!state || state === 'normal' || window.location.href.includes('/feed/history')) {
+			return;
+		}
+
+		// CSS selectors for progress bars that indicate watched videos
+		const progressBarSelectors = [
+			'.ytd-thumbnail-overlay-resume-playback-renderer',
+			'.ytThumbnailOverlayProgressBarHostWatchedProgressBarSegment',
+			'.ytThumbnailOverlayProgressBarHostWatchedProgressBarSegmentModern',
+		].join(',');
+
+		// Container selectors based on section
+		let containerSelectors;
+		if (section === 'subscriptions') {
+			containerSelectors = [
+				'ytd-rich-item-renderer',
+				'ytd-grid-video-renderer',
+				'ytd-video-renderer',
+			];
+		} else if (section === 'playlist') {
+			containerSelectors = ['ytd-playlist-video-renderer'];
+		} else if (section === 'watch') {
+			containerSelectors = ['ytd-compact-video-renderer', 'yt-lockup-view-model'];
+		} else {
+			containerSelectors = [
+				'ytd-rich-item-renderer',
+				'ytd-video-renderer',
+				'ytd-grid-video-renderer',
+			];
+		}
+
+		let css = '';
+
+		if (state === 'hidden' || state === 'fullyWatched') {
+			// Hide containers that have a progress bar
+			containerSelectors.forEach(container => {
+				css += `${container}:has(${progressBarSelectors}) { display: none !important; }\n`;
+			});
+		} else if (state === 'dimmed') {
+			// Dim containers that have a progress bar
+			containerSelectors.forEach(container => {
+				css += `${container}:has(${progressBarSelectors}) { opacity: 0.3; }\n`;
+			});
+		}
+
+		if (css) {
+			const style = document.createElement('style');
+			style.id = 'YT-HWV-IMMEDIATE-HIDE';
+			style.textContent = css;
+			document.head.appendChild(style);
+		}
+	};
+
+	// Apply immediately
+	applyImmediateHidingCSS();
+
 	addStyle(`
 .YT-HWV-WATCHED-HIDDEN { display: none !important }
 
@@ -452,6 +529,7 @@ ytd-masthead #container.ytd-masthead {
 
 			localStorage.setItem(storageKey, newState);
 
+			applyImmediateHidingCSS();
 			updateClassOnWatchedItems();
 			renderButtons();
 		});
