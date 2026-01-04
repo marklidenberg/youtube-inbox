@@ -172,15 +172,25 @@
   
       const mo = new MutationObserver((mutations) => {
         for (const m of mutations) {
+          // Handle newly added nodes
           for (const node of m.addedNodes) {
             if (node && node.nodeType === 1) {
               queueProcess(node);
             }
           }
+          // Handle src attribute changes (tab switches reuse DOM, just change src)
+          if (m.type === 'attributes' && m.attributeName === 'src') {
+            const img = m.target;
+            if (img && img.tagName === 'IMG' && img.matches(THUMB_IMG_SELECTOR)) {
+              // Reset pixelated flag so it gets reprocessed
+              img.dataset.ytPixelated = '0';
+              pixelateImgElement(img);
+            }
+          }
         }
       });
-  
-      mo.observe(document.documentElement, { childList: true, subtree: true });
+
+      mo.observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] });
     };
   
     if (document.readyState === 'loading') {
