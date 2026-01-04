@@ -15,7 +15,12 @@
 		trustedTypes.createPolicy('default', { createHTML: (s) => s, createScript: (s) => s, createScriptURL: (s) => s });
 	}
 
-	const KEYS = { A: 'DECLUTTER_CHECKBOX_A', B: 'DECLUTTER_CHECKBOX_B' };
+	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS' };
+	const INIT_KEY = 'DECLUTTER_INITIALIZED';
+	if (!localStorage.getItem(INIT_KEY)) {
+		Object.values(KEYS).forEach((k) => localStorage.setItem(k, 'true'));
+		localStorage.setItem(INIT_KEY, 'true');
+	}
 	const get = (k) => localStorage.getItem(k) === 'true';
 	const set = (k, v) => localStorage.setItem(k, v);
 
@@ -41,8 +46,9 @@
 		wrap.innerHTML = `<button class="DECLUTTER-BTN">Declutter</button>
 <div class="DECLUTTER-MENU">
 <button class="DECLUTTER-TOGGLE-ALL">Toggle All</button>
-<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcA"${get(KEYS.A) ? ' checked' : ''}>Option A</label>
-<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcB"${get(KEYS.B) ? ' checked' : ''}>Option B</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcLogo"${get(KEYS.LOGO) ? ' checked' : ''}>Hide Logo</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcCreate"${get(KEYS.CREATE) ? ' checked' : ''}>Hide +Create button</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcNotifications"${get(KEYS.NOTIFICATIONS) ? ' checked' : ''}>Hide Notifications button</label>
 </div>`;
 
 		const menu = wrap.querySelector('.DECLUTTER-MENU');
@@ -53,8 +59,9 @@
 			const allChecked = [...checkboxes].every((cb) => cb.checked);
 			checkboxes.forEach((cb) => { cb.checked = !allChecked; cb.dispatchEvent(new Event('change', { bubbles: true })); });
 		};
-		wrap.querySelector('#dcA').onchange = (e) => set(KEYS.A, e.target.checked);
-		wrap.querySelector('#dcB').onchange = (e) => set(KEYS.B, e.target.checked);
+		wrap.querySelector('#dcLogo').onchange = (e) => set(KEYS.LOGO, e.target.checked);
+		wrap.querySelector('#dcCreate').onchange = (e) => set(KEYS.CREATE, e.target.checked);
+		wrap.querySelector('#dcNotifications').onchange = (e) => set(KEYS.NOTIFICATIONS, e.target.checked);
 		document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) menu.classList.remove('open'); });
 
 		target.parentNode.insertBefore(wrap, target);
