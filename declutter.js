@@ -18,7 +18,7 @@
 		trustedTypes.createPolicy('default', { createHTML: (s) => s, createScript: (s) => s, createScriptURL: (s) => s });
 	}
 
-	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', SIDEBAR: 'DECLUTTER_HIDE_SIDEBAR', DIVIDERS: 'DECLUTTER_HIDE_DIVIDERS', COMMENTS: 'DECLUTTER_HIDE_COMMENTS', RECOMMENDATIONS: 'DECLUTTER_HIDE_RECOMMENDATIONS', DESCRIPTION_JUNK: 'DECLUTTER_HIDE_DESCRIPTION_JUNK', SHORTS: 'DECLUTTER_HIDE_SHORTS', CHANNEL_JUNK: 'DECLUTTER_HIDE_CHANNEL_JUNK' };
+	const KEYS = { LOGO: 'DECLUTTER_HIDE_LOGO', CREATE: 'DECLUTTER_HIDE_CREATE', NOTIFICATIONS: 'DECLUTTER_HIDE_NOTIFICATIONS', MICROPHONE: 'DECLUTTER_HIDE_MICROPHONE', SIDEBAR: 'DECLUTTER_HIDE_SIDEBAR', DIVIDERS: 'DECLUTTER_HIDE_DIVIDERS', COMMENTS: 'DECLUTTER_HIDE_COMMENTS', RECOMMENDATIONS: 'DECLUTTER_HIDE_RECOMMENDATIONS', DESCRIPTION_JUNK: 'DECLUTTER_HIDE_DESCRIPTION_JUNK', SHORTS: 'DECLUTTER_HIDE_SHORTS', CHANNEL_JUNK: 'DECLUTTER_HIDE_CHANNEL_JUNK', HOVER_PLAY: 'DECLUTTER_DISABLE_HOVER_PLAY' };
 	const INIT_KEY = 'DECLUTTER_INITIALIZED';
 	if (!localStorage.getItem(INIT_KEY)) {
 		Object.values(KEYS).forEach((k) => localStorage.setItem(k, 'true'));
@@ -101,7 +101,10 @@
 .DECLUTTER-HIDE-DIVIDERS #tabs-divider { display: none !important; }
 .DECLUTTER-HIDE-DIVIDERS ytd-tabbed-page-header #tabs-inner-container { border: none !important; }
 .DECLUTTER-HIDE-DIVIDERS tp-yt-app-header { border: none !important; }
-.DECLUTTER-HIDE-DIVIDERS tp-yt-app-toolbar { border: none !important; }`;
+.DECLUTTER-HIDE-DIVIDERS tp-yt-app-toolbar { border: none !important; }
+.DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail[is-preview-loading] video, .DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail[is-preview-loaded] video { display: none !important; }
+.DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail #mouseover-overlay { display: none !important; }
+.DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail[is-preview-loading] img, .DECLUTTER-DISABLE-HOVER-PLAY ytd-thumbnail[is-preview-loaded] img { opacity: 1 !important; }`;
 	document.head.appendChild(style);
 
 	const applySettings = () => {
@@ -116,6 +119,7 @@
 		document.body.classList.toggle('DECLUTTER-HIDE-DESCRIPTION-JUNK', get(KEYS.DESCRIPTION_JUNK));
 		document.body.classList.toggle('DECLUTTER-HIDE-SHORTS', get(KEYS.SHORTS));
 		document.body.classList.toggle('DECLUTTER-HIDE-CHANNEL-JUNK', get(KEYS.CHANNEL_JUNK));
+		document.body.classList.toggle('DECLUTTER-DISABLE-HOVER-PLAY', get(KEYS.HOVER_PLAY));
 	};
 	applySettings();
 
@@ -139,6 +143,7 @@
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcDescriptionJunk"${get(KEYS.DESCRIPTION_JUNK) ? ' checked' : ''}>Hide Description Junk</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcShorts"${get(KEYS.SHORTS) ? ' checked' : ''}>Hide Shorts</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcChannelJunk"${get(KEYS.CHANNEL_JUNK) ? ' checked' : ''}>Hide Channel Junk</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcHoverPlay"${get(KEYS.HOVER_PLAY) ? ' checked' : ''}>Disable Hover-Play</label>
 </div>`;
 
 		const menu = wrap.querySelector('.DECLUTTER-MENU');
@@ -160,6 +165,7 @@
 		wrap.querySelector('#dcDescriptionJunk').onchange = (e) => { set(KEYS.DESCRIPTION_JUNK, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcShorts').onchange = (e) => { set(KEYS.SHORTS, e.target.checked); applySettings(); };
 		wrap.querySelector('#dcChannelJunk').onchange = (e) => { set(KEYS.CHANNEL_JUNK, e.target.checked); applySettings(); };
+		wrap.querySelector('#dcHoverPlay').onchange = (e) => { set(KEYS.HOVER_PLAY, e.target.checked); applySettings(); };
 		document.addEventListener('click', (e) => { if (!wrap.contains(e.target)) menu.classList.remove('open'); });
 
 		target.parentNode.insertBefore(wrap, target);
