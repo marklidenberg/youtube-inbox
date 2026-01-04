@@ -47,7 +47,8 @@
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Settings"]) { display: none !important; }
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Report history"]) { display: none !important; }
 .DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Help"]) { display: none !important; }
-.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Send feedback"]) { display: none !important; }`;
+.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Send feedback"]) { display: none !important; }
+.DECLUTTER-HIDE-SIDEBAR ytd-guide-renderer ytd-guide-entry-renderer:has(a[title="Shorts"]) { display: none !important; }`;
 	document.head.appendChild(style);
 
 	const applySettings = () => {
