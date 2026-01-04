@@ -1,13 +1,16 @@
 // ==UserScript==
 // @name         youtube-inbox: declutter
-// @namespace    https://example.com/
+// @namespace    http://github.com/marklidenberg/youtube-inbox
 // @version      1.0
 // @license      MIT
-// @description  A simple userscript with settings
+// @description  Declutter YouTube UI by hiding unnecessary elements
+// @author       Mark Lidenberg
 // @match        http://*.youtube.com/*
 // @match        https://*.youtube.com/*
 // @noframes
 // ==/UserScript==
+
+// Repository: http://github.com/marklidenberg/youtube-inbox
 
 (() => {
 	// Bypass YouTube's Trusted Types restrictions

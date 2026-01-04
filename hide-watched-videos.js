@@ -1,12 +1,10 @@
 // ==UserScript==
 // @name         YouTube: Hide Watched Videos
-// @namespace    https://www.haus.gg/
-// @version      7.0
+// @namespace    http://github.com/marklidenberg/youtube-inbox
+// @version      1.0
 // @license      MIT
 // @description  Hides watched videos from your YouTube subscriptions page.
-// @author       Ev Haus
-// @author       netjeff
-// @author       actionless
+// @author       Mark Lidenberg
 // @match        http://*.youtube.com/*
 // @match        http://youtube.com/*
 // @match        https://*.youtube.com/*
@@ -14,10 +12,7 @@
 // @noframes
 // ==/UserScript==
 
-// To submit bugs or submit revisions please see visit the repository at:
-// https://github.com/EvHaus/youtube-hide-watched
-// You can open new issues at:
-// https://github.com/EvHaus/youtube-hide-watched/issues
+// Repository: http://github.com/marklidenberg/youtube-inbox
 
 const REGEX_CHANNEL = /.*\/(user|channel|c)\/.+\/videos/u;
 const REGEX_USER = /.*\/@.*/u;

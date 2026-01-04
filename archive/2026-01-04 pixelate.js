@@ -13,7 +13,7 @@
   'use strict';
 
   // ---- TWEAK THESE ----
-  const PIXEL_SCALE = 0.15;      // smaller = chunkier pixels (try 0.04 .. 0.10)
+  const PIXEL_SCALE = 1;      // smaller = chunkier pixels (try 0.04 .. 0.10)
   const JPEG_QUALITY = 0.25;     // lower = more artifacts (0.15 .. 0.40)
   const ONLY_YTIMG = false;       // only pixelate i.ytimg.com thumbs (safer)
   // ---------------------
