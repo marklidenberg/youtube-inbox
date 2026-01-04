@@ -88,6 +88,69 @@
 .YT-HRV-BUTTON-DISABLED {
 	color: var(--yt-spec-icon-disabled);
 }
+
+/* Thumbnail hover buttons */
+.YT-HRV-THUMB-BUTTONS {
+	position: absolute;
+	bottom: 8px;
+	right: 8px;
+	display: flex;
+	gap: 4px;
+	opacity: 0;
+	transition: opacity 0.2s ease;
+	z-index: 100;
+}
+
+ytd-thumbnail:hover .YT-HRV-THUMB-BUTTONS,
+.YT-HRV-THUMB-BUTTONS:focus-within {
+	opacity: 1;
+}
+
+.YT-HRV-THUMB-BTN {
+	width: 32px;
+	height: 32px;
+	border: none;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.7);
+	color: white;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.YT-HRV-THUMB-BTN:hover {
+	background: rgba(0, 0, 0, 0.9);
+	transform: scale(1.1);
+}
+
+.YT-HRV-THUMB-BTN svg {
+	width: 18px;
+	height: 18px;
+}
+
+.YT-HRV-THUMB-BTN-LIKED {
+	background: rgba(6, 95, 212, 0.9);
+}
+
+.YT-HRV-THUMB-BTN-LIKED:hover {
+	background: rgba(6, 95, 212, 1);
+}
+
+.YT-HRV-THUMB-BTN-DISLIKED {
+	background: rgba(204, 0, 0, 0.9);
+}
+
+.YT-HRV-THUMB-BTN-DISLIKED:hover {
+	background: rgba(204, 0, 0, 1);
+}
+
+.YT-HRV-THUMB-BTN:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
 `;
 	document.head.appendChild(style);
 
@@ -290,6 +353,50 @@
 		// Progress display could be added here if needed
 	};
 
+	// Rate a video (like, dislike, or remove rating)
+	const rateVideo = async (videoId, rating) => {
+		try {
+			const authHeader = await getSapisidHash();
+			if (!authHeader) {
+				console.error('YT-HRV: Not authenticated');
+				return false;
+			}
+
+			const apiKey = window.ytcfg?.data_?.INNERTUBE_API_KEY || 'AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8';
+
+			const response = await fetch(`https://www.youtube.com/youtubei/v1/like/${rating}?key=${apiKey}`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': authHeader,
+					'X-Origin': 'https://www.youtube.com',
+				},
+				body: JSON.stringify({
+					context: {
+						client: {
+							clientName: 'WEB',
+							clientVersion: '2.20240101.00.00',
+						}
+					},
+					target: {
+						videoId: videoId
+					}
+				}),
+				credentials: 'include'
+			});
+
+			if (!response.ok) {
+				console.error('YT-HRV: Failed to rate video', response.status);
+				return false;
+			}
+
+			return true;
+		} catch (error) {
+			console.error('YT-HRV: Error rating video:', videoId, error);
+			return false;
+		}
+	};
+
 	// Apply visual state to video elements
 	const applyState = (element, rating) => {
 		const state = getState();
@@ -306,6 +413,139 @@
 		}
 	};
 
+	// Create thumbnail hover buttons for a video element
+	const createThumbButtons = (element, videoId, currentRating) => {
+		const thumbnail = element.querySelector('ytd-thumbnail, a#thumbnail');
+		if (!thumbnail) return;
+
+		// Check if buttons already exist
+		if (thumbnail.querySelector('.YT-HRV-THUMB-BUTTONS')) return;
+
+		// Ensure thumbnail has position relative for absolute positioning of buttons
+		const computedStyle = window.getComputedStyle(thumbnail);
+		if (computedStyle.position === 'static') {
+			thumbnail.style.position = 'relative';
+		}
+
+		const buttonContainer = document.createElement('div');
+		buttonContainer.classList.add('YT-HRV-THUMB-BUTTONS');
+
+		// Like button
+		const likeBtn = document.createElement('button');
+		likeBtn.classList.add('YT-HRV-THUMB-BTN');
+		if (currentRating === 'like') {
+			likeBtn.classList.add('YT-HRV-THUMB-BTN-LIKED');
+		}
+		likeBtn.innerHTML = currentRating === 'like' ? THUMB_ICONS.likeFilled : THUMB_ICONS.like;
+		likeBtn.title = currentRating === 'like' ? 'Remove like' : 'Like';
+		likeBtn.addEventListener('click', async (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			await handleThumbButtonClick(element, videoId, 'like', likeBtn, buttonContainer);
+		});
+
+		// Dislike button
+		const dislikeBtn = document.createElement('button');
+		dislikeBtn.classList.add('YT-HRV-THUMB-BTN');
+		if (currentRating === 'dislike') {
+			dislikeBtn.classList.add('YT-HRV-THUMB-BTN-DISLIKED');
+		}
+		dislikeBtn.innerHTML = currentRating === 'dislike' ? THUMB_ICONS.dislikeFilled : THUMB_ICONS.dislike;
+		dislikeBtn.title = currentRating === 'dislike' ? 'Remove dislike' : 'Dislike';
+		dislikeBtn.addEventListener('click', async (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+			await handleThumbButtonClick(element, videoId, 'dislike', dislikeBtn, buttonContainer);
+		});
+
+		buttonContainer.appendChild(likeBtn);
+		buttonContainer.appendChild(dislikeBtn);
+		thumbnail.appendChild(buttonContainer);
+	};
+
+	// Handle thumb button click
+	const handleThumbButtonClick = async (element, videoId, action, _clickedBtn, container) => {
+		const currentRating = ratingStatusMap.get(element) || false;
+		const likeBtn = container.querySelector('.YT-HRV-THUMB-BTN:first-child');
+		const dislikeBtn = container.querySelector('.YT-HRV-THUMB-BTN:last-child');
+
+		// Disable buttons during operation
+		likeBtn.disabled = true;
+		dislikeBtn.disabled = true;
+
+		let newRating;
+		let apiAction;
+
+		if (action === 'like') {
+			if (currentRating === 'like') {
+				// Remove like
+				apiAction = 'removelike';
+				newRating = false;
+			} else {
+				// Add like
+				apiAction = 'like';
+				newRating = 'like';
+			}
+		} else {
+			if (currentRating === 'dislike') {
+				// Remove dislike
+				apiAction = 'removedislike';
+				newRating = false;
+			} else {
+				// Add dislike
+				apiAction = 'dislike';
+				newRating = 'dislike';
+			}
+		}
+
+		const success = await rateVideo(videoId, apiAction);
+
+		if (success) {
+			// Update cache
+			if (newRating) {
+				setCachedRating(videoId, newRating);
+			} else {
+				// Remove from cache if unrated
+				const cache = getCache();
+				delete cache[videoId];
+				setCache(cache);
+			}
+
+			// Update rating status map
+			ratingStatusMap.set(element, newRating);
+
+			// Update button states
+			likeBtn.classList.remove('YT-HRV-THUMB-BTN-LIKED');
+			dislikeBtn.classList.remove('YT-HRV-THUMB-BTN-DISLIKED');
+
+			if (newRating === 'like') {
+				likeBtn.classList.add('YT-HRV-THUMB-BTN-LIKED');
+				likeBtn.innerHTML = THUMB_ICONS.likeFilled;
+				likeBtn.title = 'Remove like';
+				dislikeBtn.innerHTML = THUMB_ICONS.dislike;
+				dislikeBtn.title = 'Dislike';
+			} else if (newRating === 'dislike') {
+				dislikeBtn.classList.add('YT-HRV-THUMB-BTN-DISLIKED');
+				dislikeBtn.innerHTML = THUMB_ICONS.dislikeFilled;
+				dislikeBtn.title = 'Remove dislike';
+				likeBtn.innerHTML = THUMB_ICONS.like;
+				likeBtn.title = 'Like';
+			} else {
+				likeBtn.innerHTML = THUMB_ICONS.like;
+				likeBtn.title = 'Like';
+				dislikeBtn.innerHTML = THUMB_ICONS.dislike;
+				dislikeBtn.title = 'Dislike';
+			}
+
+			// Re-apply visual state (dim/hide)
+			applyState(element, newRating);
+		}
+
+		// Re-enable buttons
+		likeBtn.disabled = false;
+		dislikeBtn.disabled = false;
+	};
+
 	// Store rating status on elements
 	const ratingStatusMap = new Map();
 
@@ -318,8 +558,10 @@
 
 		// Build a map from videoId to element for quick lookup
 		const videoIdToElement = new Map();
+		const videoIdMap = new Map(); // To store videoId for each element
 		videos.forEach(({ element, videoId }) => {
 			videoIdToElement.set(videoId, element);
+			videoIdMap.set(element, videoId);
 		});
 
 		// Mark as processed and show loading indicator
@@ -334,7 +576,17 @@
 			if (element) {
 				ratingStatusMap.set(element, rating);
 				applyState(element, rating);
+				// Create thumbnail buttons
+				createThumbButtons(element, videoId, rating);
 			}
+		});
+
+		// Also add buttons to videos that weren't rated (rating = false)
+		videos.forEach(({ element, videoId }) => {
+			if (!ratingStatusMap.has(element)) {
+				ratingStatusMap.set(element, false);
+			}
+			createThumbButtons(element, videoId, ratingStatusMap.get(element));
 		});
 	};
 
@@ -353,6 +605,14 @@
 		dimmed: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="currentColor" opacity="0.5" d="M24 9C14 9 5.46 15.22 2 24c3.46 8.78 12 15 22 15 10.01 0 18.54-6.22 22-15-3.46-8.78-11.99-15-22-15zm0 25c-5.52 0-10-4.48-10-10s4.48-10 10-10 10 4.48 10 10-4.48 10-10 10zm0-16c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"/></svg>',
 		// Hidden - hide rated videos (eye with slash)
 		hidden: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 48 48"><path fill="currentColor" d="M24 14c5.52 0 10 4.48 10 10 0 1.29-.26 2.52-.71 3.65l5.85 5.85c3.02-2.52 5.4-5.78 6.87-9.5-3.47-8.78-12-15-22.01-15-2.8 0-5.48.5-7.97 1.4l4.32 4.31c1.13-.44 2.36-.71 3.65-.71zM4 8.55l4.56 4.56.91.91C6.17 16.6 3.56 20.03 2 24c3.46 8.78 12 15 22 15 3.1 0 6.06-.6 8.77-1.69l.85.85L39.45 44 42 41.46 6.55 6 4 8.55zM15.06 19.6l3.09 3.09c-.09.43-.15.86-.15 1.31 0 3.31 2.69 6 6 6 .45 0 .88-.06 1.3-.15l3.09 3.09C27.06 33.6 25.58 34 24 34c-5.52 0-10-4.48-10-10 0-1.58.4-3.06 1.06-4.4zm8.61-1.57 6.3 6.3L30 24c0-3.31-2.69-6-6-6l-.33.03z"/></svg>',
+	};
+
+	// Thumb icons for like/dislike buttons
+	const THUMB_ICONS = {
+		like: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11H3v10h4h1h9.43 c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z M7,20H4v-8h3V20z M19.98,13.17l-1.34,6 C18.54,19.65,18.03,20,17.43,20H8v-8.61l5.6-6.06C13.79,5.12,14.08,5,14.38,5c0.26,0,0.5,0.11,0.63,0.3 c0.07,0.1,0.15,0.26,0.09,0.47l-1.52,4.94L13.18,12h1.35h4.23c0.41,0,0.8,0.17,1.03,0.46C19.92,12.61,20.05,12.86,19.98,13.17z"/></svg>',
+		likeFilled: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3,11h3v10H3V11z M18.77,11h-4.23l1.52-4.94C16.38,5.03,15.54,4,14.38,4c-0.58,0-1.14,0.24-1.52,0.65L7,11v10h10.43 c1.06,0,1.98-0.67,2.19-1.61l1.34-6C21.23,12.15,20.18,11,18.77,11z"/></svg>',
+		dislike: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17,4h-1H6.57C5.5,4,4.59,4.67,4.38,5.61l-1.34,6C2.77,12.85,3.82,14,5.23,14h4.23l-1.52,4.94C7.62,19.97,8.46,21,9.62,21 c0.58,0,1.14-0.24,1.52-0.65L17,14h4V4H17z M10.4,19.67C10.21,19.88,9.92,20,9.62,20c-0.26,0-0.5-0.11-0.63-0.3 c-0.07-0.1-0.15-0.26-0.09-0.47l1.52-4.94l0.4-1.29H9.46H5.23c-0.41,0-0.8-0.17-1.03-0.46c-0.12-0.15-0.25-0.4-0.18-0.71l1.34-6 C5.46,5.35,5.97,5,6.57,5H16v8.61L10.4,19.67z M20,13h-3V5h3V13z"/></svg>',
+		dislikeFilled: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M18,4h3v10h-3V4z M5.23,14h4.23l-1.52,4.94C7.62,19.97,8.46,21,9.62,21c0.58,0,1.14-0.24,1.52-0.65L17,14V4H6.57 C5.5,4,4.59,4.67,4.38,5.61l-1.34,6C2.77,12.85,3.82,14,5.23,14z"/></svg>',
 	};
 
 	// Render buttons in header
