@@ -22,7 +22,7 @@
 
 	const STORAGE_KEY = 'YT_HIDE_WATCHED_RATED_STATE';
 	const CACHE_KEY = 'YT_HIDE_WATCHED_RATED_CACHE';
-	const WATCHED_THRESHOLD_PERCENT = 90;
+	const WATCHED_THRESHOLD_PERCENT = 99;
 
 	// States: 'normal' (show all), 'dimmed' (dim watched/rated), 'hidden' (hide watched/rated)
 	const getState = () => localStorage.getItem(STORAGE_KEY) || 'normal';
