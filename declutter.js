@@ -141,15 +141,15 @@
 <button class="DECLUTTER-TOGGLE-ALL">Toggle All</button>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcLogo"${get(KEYS.LOGO) ? ' checked' : ''}>Hide Logo</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcCreate"${get(KEYS.CREATE) ? ' checked' : ''}>Hide +Create button</label>
-<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcNotifications"${get(KEYS.NOTIFICATIONS) ? ' checked' : ''}>Hide Notifications button</label>
-<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcMicrophone"${get(KEYS.MICROPHONE) ? ' checked' : ''}>Hide Microphone</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcNotifications"${get(KEYS.NOTIFICATIONS) ? ' checked' : ''}>Hide Notifications Button</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcMicrophone"${get(KEYS.MICROPHONE) ? ' checked' : ''}>Hide Microphone Button</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcSidebar"${get(KEYS.SIDEBAR) ? ' checked' : ''}>Hide Sidebar Junk</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcDividers"${get(KEYS.DIVIDERS) ? ' checked' : ''}>Hide Dividers</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcComments"${get(KEYS.COMMENTS) ? ' checked' : ''}>Hide Comments</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcRecommendations"${get(KEYS.RECOMMENDATIONS) ? ' checked' : ''}>Hide Recommendations</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcDescriptionJunk"${get(KEYS.DESCRIPTION_JUNK) ? ' checked' : ''}>Hide Description Junk</label>
-<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcShorts"${get(KEYS.SHORTS) ? ' checked' : ''}>Hide Shorts</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcChannelJunk"${get(KEYS.CHANNEL_JUNK) ? ' checked' : ''}>Hide Channel Junk</label>
+<label class="DECLUTTER-ITEM"><input type="checkbox" id="dcShorts"${get(KEYS.SHORTS) ? ' checked' : ''}>Hide Shorts</label>
 <label class="DECLUTTER-ITEM"><input type="checkbox" id="dcHoverPlay"${get(KEYS.HOVER_PLAY) ? ' checked' : ''}>Disable Hover-Play</label>
 </div>`;
 
