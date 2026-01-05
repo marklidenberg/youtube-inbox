@@ -435,8 +435,11 @@ ytd-thumbnail:hover .YT-HRV-THUMB-BUTTONS,
 		// Remove all state classes first
 		element.classList.remove('YT-HRV-RATED-HIDDEN', 'YT-HRV-RATED-DIMMED', 'YT-HRV-LOADING');
 
-		// If no status (not watched and not rated), don't apply any visual changes
-		if (!status) return;
+		// Check if element is watched (watched status takes priority)
+		const isWatched = watchedElements.has(element);
+
+		// If no status and not watched, don't apply any visual changes
+		if (!status && !isWatched) return;
 
 		if (state === 'hidden') {
 			element.classList.add('YT-HRV-RATED-HIDDEN');
