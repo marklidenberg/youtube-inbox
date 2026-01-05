@@ -1,16 +1,17 @@
 # youtube-inbox
 
-A cleaner YouTube experience for focused watching.
+A decluttered YouTube with only videos you haven't seen yet.
 
-## Scripts 
+## Scripts
 - `declutter.js`: hides distractions. Customizable
-- `hide-watched-videos.js`: hides watched videos. When YouTube watch history is enabled, fully watched videos are marked with a red progress bar. But if you watched a video on another account, cleared your history, or had history disabled — there's no way to mark it as fully watched quickly (the YouTube API doesn't support marking videos as watched). To work around this, the script also hides liked/disliked videos, letting you use ratings as a permanent "watched" marker.
+- `hide-watched-or-rated-videos.js`: hides fully watched and liked/disliked videos
+    - Why hide liked/disliked? YouTube has no quick way to mark a video as watched (no API for it). Workaround: use like/dislike to mark videos you've already seen or don't want to finish.
 
 🪄 Vibe coded.
 
 ## How to install
 
-Add scripts to `UserScripts` or `Tampermonkey` extensions.
+Add scripts to `Tampermonkey` or similar browser extension.
 
 ## Declutter
 ### Before
